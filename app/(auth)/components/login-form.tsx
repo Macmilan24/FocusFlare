@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import GithubSignIn from "./github-sign-in";
 import GoogleSignIn from "./google-sign-in";
+import Image from "next/image";
 
 export function LoginForm({
   className,
@@ -55,7 +56,7 @@ export function LoginForm({
               </div>
             </form>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4 px-6 md:px-8">
               <GithubSignIn />
               <GoogleSignIn />
             </div>
@@ -67,9 +68,10 @@ export function LoginForm({
             </div>
           </div>
           <div className="bg-muted relative hidden md:block">
-            <img
-              src="/placeholder.svg"
+            <Image
+              src="/image/login_BG.jpg"
               alt="Image"
+              fill
               className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
             />
           </div>
