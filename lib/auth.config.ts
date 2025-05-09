@@ -31,7 +31,7 @@ export default {
         }
 
         if (!user) {
-          user = await prisma.user.findUnique({
+          user = await prisma.user.findFirst({
             where: { username: loginId },
           });
         }
@@ -78,11 +78,11 @@ export default {
       if (user) {
         // @ts-expect-error user is not defined in the type of token
         token.id = user.id;
-        if (user.role) token.role = user.role as Role;
-        if (user.username) token.username = user.username;
-        token.name = user.name ?? null;
-        token.image = user.image ?? null;
-        token.email = user.email ?? null;
+        token.role = user.role as Role;
+        token.username = user.username;
+        token.name = user.name;
+        token.image = user.image;
+        token.email = user.email;
       }
 
       return token;
@@ -104,6 +104,13 @@ export default {
           session.user.image = token.image as string | null | undefined;
       }
       return session;
+    },
+
+    async redirect({ url, baseUrl }) {
+      console.log("[REDIRECT CALLBACK] Fired. URL:", url, "BaseURL:", baseUrl);
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (new URL(url).origin === baseUrl) return url;
+      return baseUrl; // Default for most cases
     },
   },
 } satisfies NextAuthConfig;

@@ -24,6 +24,12 @@ export interface AddChildFormState {
   success?: boolean;
 }
 
+export interface ChildData {
+  id: string;
+  username: string | null;
+  name: string | null;
+}
+
 export async function authenticate(
   prevState: LoginFormState | undefined,
   formData: FormData
@@ -42,7 +48,6 @@ export async function authenticate(
     await nextAuthSignIn("credentials", {
       loginId,
       password,
-      redirectTo: "/dashboard",
     });
 
     return { message: "Login successful! Redirecting...", isError: false };
@@ -291,5 +296,49 @@ export async function addChild(
       message: "An unexpected error occurred while adding the child.",
       isError: true,
     };
+  }
+}
+
+// --- GET CHILDREN ACTION ---
+export async function getChildrenForParent(): Promise<{
+  children?: ChildData[];
+  error?: string;
+}> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== Role.PARENT) {
+    return { error: "Unauthorized or not a parent." };
+  }
+  const parentId = session.user.id;
+
+  try {
+    const parentWithChildren = await prisma.user.findUnique({
+      where: { id: parentId },
+      include: {
+        parentLink: {
+          orderBy: {
+            createdAt: "asc",
+          },
+          include: {
+            child: {
+              select: {
+                id: true,
+                username: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!parentWithChildren) {
+      return { error: "Parent not found." };
+    }
+
+    const children = parentWithChildren.parentLink.map((link) => link.child);
+    return { children };
+  } catch (error) {
+    console.error("Error fetching children:", error);
+    return { error: "Failed to fetch children." };
   }
 }
