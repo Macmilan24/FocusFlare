@@ -1,4 +1,3 @@
-// components/auth/signout-button.tsx
 "use client";
 
 import { handleSignOut } from "@/actions/auth.actions";
@@ -15,7 +14,7 @@ export function SignOutButton() {
   };
 
   return (
-    <form action={handleSignOut}>
+    <form action={onSubmit}>
       <Button type="submit" variant="outline" size="sm" disabled={isPending}>
         {isPending ? "Signing Out..." : "Sign Out"}
       </Button>
