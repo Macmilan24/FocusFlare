@@ -41,8 +41,7 @@ export async function authenticate(
     return { message: "Login successful! Redirecting...", isError: false };
   } catch (error) {
     if (error instanceof AuthError) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      switch ((error as any).type) {
+      switch (error.type) {
         case "CredentialsSignin":
           return {
             message: "Invalid email/username or password.",
@@ -50,17 +49,21 @@ export async function authenticate(
           };
         case "CallbackRouteError":
           return {
-            message: `Login failed: ${error?.message || "Callback error"}`,
+            message: `Login failed: ${
+              error.cause?.err?.message || "Callback error"
+            }`,
             isError: true,
           };
         default:
-          // Log the error for server-side inspection
           console.error("AuthError during signin:", error);
           return {
             message: "Something went wrong during login.",
             isError: true,
           };
       }
+    }
+    if ((error as any)?.digest?.startsWith("NEXT_REDIRECT")) {
+      throw error;
     }
 
     console.error("Unexpected error during signin:", error);

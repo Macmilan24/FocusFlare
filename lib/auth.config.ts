@@ -12,14 +12,23 @@ export default {
           loginId?: string;
           password?: string;
         };
-        if (!loginId || !password) {
-          console.log("Authorization failed: Missing loginId or password");
+        if (!loginId) {
+          console.log("Authorization failed: Missing loginId");
           return null;
         }
 
-        let user = await prisma.user.findUnique({
-          where: { username: loginId },
-        });
+        if (!password) {
+          console.log("Authorization failed: Missing password");
+          return null;
+        }
+
+        let user;
+
+        if (loginId.includes("@")) {
+          user = await prisma.user.findUnique({
+            where: { email: loginId },
+          });
+        }
 
         if (!user) {
           user = await prisma.user.findUnique({
