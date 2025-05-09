@@ -83,3 +83,23 @@ model ParentChildLink {
 
   @@unique([parentId, childId])
 }
+
+enum ContentType {
+  STORY
+  QUIZ
+  LESSON
+  GAME
+}
+
+model LearningContent {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  contentType ContentType
+  subject     String
+  content     Json
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([title, subject], name: "title_subject")
+}

@@ -1,0 +1,23 @@
+// tsconfig.seed.json
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "target": "es2017", // Or newer, compatible with your Node.js version
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "outDir": "dist_seed_unused", // This won't actually be used by ts-node for execution
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true // Good to have if your seed might import JSON
+  },
+  "ts-node": {
+    // Tell ts-node to use CommonJS for this execution
+    // This often overrides or works alongside the compilerOptions.module
+    "compilerOptions": {
+      "module": "commonjs"
+    },
+    "transpileOnly": true // Faster, good for scripts
+  },
+  "include": ["prisma/seed.ts"] // Specify which files this config applies to
+}

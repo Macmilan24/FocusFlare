@@ -7,7 +7,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-// import Link from "next/link";
+import Link from "next/link";
 import { Sparkles, BookOpen, Target, Palette } from "lucide-react";
 
 interface SubjectCardProps {
@@ -76,31 +76,36 @@ export default async function KidHomePage() {
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {subjects.map((subject) => (
-          // <Link href={subject.href} key={subject.title} passHref> // Wrap with Link later
-          <Card
+          <Link
+            href={subject.href}
             key={subject.title}
-            className={`hover:shadow-lg transition-shadow duration-200 ease-in-out cursor-pointer ${subject.colorClass} border-2`}
+            passHref
+            legacyBehavior={subject.href === "#" ? undefined : false}
           >
-            <CardHeader className="items-center text-center">
-              <div
-                className={`p-3 rounded-full mb-3 ${subject.colorClass.replace(
-                  "bg-",
-                  "bg-opacity-50 "
-                )}`}
-              >
-                {" "}
-                {/* Slightly different bg for icon circle */}
-                {subject.icon}
-              </div>
-              <CardTitle className="text-xl font-semibold">
-                {subject.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center">
-              <CardDescription>{subject.description}</CardDescription>
-            </CardContent>
-          </Card>
-          // </Link>
+            <Card
+              key={subject.title}
+              className={`hover:shadow-lg transition-shadow duration-200 ease-in-out cursor-pointer ${subject.colorClass} border-2`}
+            >
+              <CardHeader className="items-center text-center">
+                <div
+                  className={`p-3 rounded-full mb-3 ${subject.colorClass.replace(
+                    "bg-",
+                    "bg-opacity-50 "
+                  )}`}
+                >
+                  {" "}
+                  {/* Slightly different bg for icon circle */}
+                  {subject.icon}
+                </div>
+                <CardTitle className="text-xl font-semibold">
+                  {subject.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <CardDescription>{subject.description}</CardDescription>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
