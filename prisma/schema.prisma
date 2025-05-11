@@ -69,8 +69,9 @@ model User {
   accounts Account[]
   sessions Session[]
 
-  parentLink ParentChildLink[] @relation("Parent")
-  childLink  ParentChildLink[] @relation("Child")
+  parentLink       ParentChildLink[]      @relation("Parent")
+  childLink        ParentChildLink[]      @relation("Child")
+  learningProgress UserLearningProgress[]
 }
 
 model ParentChildLink {
@@ -92,14 +93,31 @@ enum ContentType {
 }
 
 model LearningContent {
-  id          String      @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  description String?
-  contentType ContentType
-  subject     String
-  content     Json
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id           String                 @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  description  String?
+  contentType  ContentType
+  subject      String
+  content      Json
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  userProgress UserLearningProgress[]
 
   @@unique([title, subject], name: "title_subject")
+}
+
+model UserLearningProgress {
+  id           String          @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String          @db.ObjectId
+  contentId    String          @db.ObjectId
+  status       String
+  completedAt  DateTime?
+  startedAt    DateTime        @default(now())
+  lastAccessed DateTime        @updatedAt
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content      LearningContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentId])
+  @@index([userId])
+  @@index([contentId])
 }

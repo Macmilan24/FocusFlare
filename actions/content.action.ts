@@ -1,7 +1,9 @@
 "use server";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import prisma from "@/lib/db/prisma";
-import { ContentType } from "@prisma/client";
+import { auth } from "@/lib/auth";
+import { ContentType, Role } from "@prisma/client";
+
 export interface StoryListItem {
   id: string;
   title: string;
@@ -15,6 +17,11 @@ export interface StoryPageContent {
   pages: string[];
 }
 
+export interface MarkCompletionResult {
+  success?: boolean;
+  message?: string;
+  error?: string;
+}
 export async function getStoriesList(): Promise<{
   stories?: StoryListItem[];
   error?: string;
@@ -112,5 +119,57 @@ export async function getStoryById(
   } catch (error) {
     console.error(`Error fetching story by ID (${storyId}):`, error);
     return { error: "Failed to fetch story details." };
+  }
+}
+
+// --- MARK STORY AS COMPLETED ACTION ---
+export async function markStoryAsCompleted(
+  contentId: string
+): Promise<MarkCompletionResult> {
+  const session = await auth();
+
+  if (!session?.user || session.user.role !== Role.CHILD) {
+    return {
+      error:
+        "Unauthorized: Only children can mark stories as completed for themselves.",
+    };
+  }
+  const userId = session.user.id;
+
+  if (!contentId) {
+    return { error: "Content ID is required." };
+  }
+
+  try {
+    await prisma.userLearningProgress.upsert({
+      where: {
+        userId_contentId: {
+          // Using the compound unique key
+          userId: userId,
+          contentId: contentId,
+        },
+      },
+      update: {
+        // If record exists, update status and completedAt
+        status: "completed",
+        completedAt: new Date(),
+        lastAccessed: new Date(),
+      },
+      create: {
+        userId: userId,
+        contentId: contentId,
+        status: "completed",
+        completedAt: new Date(),
+        startedAt: new Date(),
+        lastAccessed: new Date(),
+      },
+    });
+    return { success: true, message: "Story marked as completed!" };
+  } catch (error) {
+    console.error(
+      `Error marking story ${contentId} as completed for user ${userId}:`,
+      error
+    );
+    return { error: "Failed to mark story as completed." };
   }
 }

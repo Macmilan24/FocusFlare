@@ -1,5 +1,6 @@
 // app/(platform)/layout.tsx
 import { auth } from "@/lib/auth";
+import { Toaster } from "@/components/ui/sonner";
 import { SignOutButton } from "@/components/auth/signout-button";
 import Link from "next/link";
 
@@ -42,6 +43,7 @@ export default async function PlatformLayout({
       <footer className="bg-gray-100 dark:bg-gray-800 text-center p-4 text-sm text-gray-600 dark:text-gray-400">
         © {new Date().getFullYear()} FocusFlare. All rights reserved.
       </footer>
+      <Toaster richColors position="top-right" />
     </div>
   );
 }

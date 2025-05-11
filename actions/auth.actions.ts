@@ -6,7 +6,7 @@ import { signOut as nextAuthSignOut } from "@/lib/auth";
 import { AuthError } from "next-auth";
 import prisma from "@/lib/db/prisma";
 import bcrypt from "bcryptjs";
-import { Role } from "@prisma/client";
+import { Role, UserLearningProgress } from "@prisma/client";
 
 export interface LoginFormState {
   message: string | null;
@@ -29,6 +29,18 @@ export interface ChildData {
   id: string;
   username: string | null;
   name: string | null;
+}
+
+export interface StoryProgress
+  extends Pick<UserLearningProgress, "status" | "completedAt"> {
+  contentId: string;
+}
+
+export interface ChildData {
+  id: string;
+  username: string | null;
+  name: string | null;
+  storyProgress?: StoryProgress[]; // Array of progress for stories
 }
 
 export async function authenticate(
@@ -298,29 +310,37 @@ export async function addChild(
 
 // --- GET CHILDREN ACTION ---
 export async function getChildrenForParent(): Promise<{
-  children?: ChildData[];
+  childrenData?: ChildData[];
   error?: string;
 }> {
   const session = await auth();
+
   if (!session?.user || session.user.role !== Role.PARENT) {
     return { error: "Unauthorized or not a parent." };
   }
   const parentId = session.user.id;
 
   try {
-    const parentWithChildren = await prisma.user.findUnique({
+    // 1. Get the parent's children links
+    const parentWithChildrenLinks = await prisma.user.findUnique({
       where: { id: parentId },
-      include: {
+      select: {
         parentLink: {
-          orderBy: {
-            createdAt: "asc",
-          },
-          include: {
+          select: {
             child: {
               select: {
                 id: true,
                 username: true,
                 name: true,
+
+                learningProgress: {
+                  where: {},
+                  select: {
+                    contentId: true,
+                    status: true,
+                    completedAt: true,
+                  },
+                },
               },
             },
           },
@@ -328,14 +348,32 @@ export async function getChildrenForParent(): Promise<{
       },
     });
 
-    if (!parentWithChildren) {
+    if (!parentWithChildrenLinks) {
       return { error: "Parent not found." };
     }
 
-    const children = parentWithChildren.parentLink.map((link) => link.child);
-    return { children };
+    const childrenData: ChildData[] = parentWithChildrenLinks.parentLink.map(
+      (link) => {
+        const child = link.child;
+        const storyProgress: StoryProgress[] = child.learningProgress.map(
+          (p) => ({
+            contentId: p.contentId,
+            status: p.status,
+            completedAt: p.completedAt,
+          })
+        );
+        return {
+          id: child.id,
+          username: child.username,
+          name: child.name,
+          storyProgress: storyProgress,
+        };
+      }
+    );
+
+    return { childrenData };
   } catch (error) {
-    console.error("Error fetching children:", error);
-    return { error: "Failed to fetch children." };
+    console.error("Error fetching children with progress:", error);
+    return { error: "Failed to fetch children's data." };
   }
 }
