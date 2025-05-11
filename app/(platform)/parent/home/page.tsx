@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation"; // useRouter, not redirect, for client components
+import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import {
@@ -10,18 +10,12 @@ import {
   getChildrenForParent,
   ChildData,
 } from "@/actions/auth.actions";
-import { getStoriesList, StoryListItem } from "@/actions/content.action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { CheckCircle2, Circle, BookOpen } from "lucide-react";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UserPlus, Users, ChevronRight } from "lucide-react";
 
 const initialAddChildState: AddChildFormState = {
   message: null,
@@ -51,12 +45,10 @@ export default function ParentHomePage() {
     initialAddChildState
   );
 
-  const [childrenData, setChildrenData] = useState<ChildData[]>([]);
-  const [stories, setStories] = useState<StoryListItem[]>([]); // State for all available stories
+  const [childrenData, setChildrenData] = useState<ChildData[]>([]); // ChildData now just needs id, name, username for this page
   const [dataError, setDataError] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
-  // Fetch children and all stories when component mounts or session is available
   useEffect(() => {
     if (status === "loading") return;
     if (
@@ -69,46 +61,28 @@ export default function ParentHomePage() {
 
     if (session?.user?.role === "PARENT") {
       setIsLoadingData(true);
-      Promise.all([
-        getChildrenForParent(),
-        getStoriesList(), // Fetch all stories
-      ])
-        .then(([childrenResult, storiesResult]) => {
-          if (childrenResult.childrenData)
-            setChildrenData(childrenResult.childrenData);
-          else if (childrenResult.error)
-            setDataError(
-              (prev) => (prev ? prev + "\n" : "") + childrenResult.error
-            );
-
-          if (storiesResult.stories) setStories(storiesResult.stories);
-          else if (storiesResult.error)
-            setDataError(
-              (prev) => (prev ? prev + "\n" : "") + storiesResult.error
-            );
+      // Only fetch children list for this page, detailed progress will be on child's page
+      getChildrenForParent()
+        .then((result) => {
+          if (result.childrenData) setChildrenData(result.childrenData);
+          else if (result.error) setDataError(result.error);
         })
-        .catch(() => {
-          setDataError(
-            "An unexpected error occurred while fetching dashboard data."
-          );
-        })
-        .finally(() => {
-          setIsLoadingData(false);
-        });
+        .catch(() =>
+          setDataError("An unexpected error occurred while fetching data.")
+        )
+        .finally(() => setIsLoadingData(false));
     }
   }, [status, session, router]);
 
-  // Refetch children after a new child is successfully added
   useEffect(() => {
     if (addChildState.success && session?.user?.role === "PARENT") {
-      setIsLoadingData(true); // Indicate loading while refetching children
+      setIsLoadingData(true);
       getChildrenForParent()
-        .then((data) => {
-          if (data.childrenData) setChildrenData(data.childrenData);
-          else if (data.error)
-            setDataError((prev) => (prev ? prev + "\n" : "") + data.error);
+        .then((result) => {
+          if (result.childrenData) setChildrenData(result.childrenData);
+          else if (result.error) setDataError(result.error);
         })
-        .finally(() => setIsLoadingData(false)); // Only children are re-fetched here
+        .finally(() => setIsLoadingData(false));
     }
   }, [addChildState.success, session?.user?.role]);
 
@@ -120,27 +94,23 @@ export default function ParentHomePage() {
   }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-2">Parent Dashboard</h1>
-      <p className="text-lg text-muted-foreground mb-8">
-        Welcome back, {session.user.name || session.user.email}! Manage your
-        children and view their progress.
-      </p>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold">Parent Dashboard</h1>
+        <p className="text-lg text-muted-foreground">
+          Welcome, {session.user.name || session.user.email}!
+        </p>
+      </div>
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-        {" "}
-        {/* Adjusted grid for 3 columns */}
-        {/* Add Child Card - Column 1 */}
         <Card className="lg:col-span-1">
-          {" "}
-          {/* Takes 1 column on large screens */}
-          {/* ... Add Child Card content (form etc.) as before ... */}
-          <CardHeader>
-            <CardTitle>Add a New Child</CardTitle>
-            <CardDescription>Create an account for your child.</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-lg font-medium">Add New Child</CardTitle>
+            <UserPlus className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <form action={addChildFormAction} className="space-y-4">
+              {/* ... Add Child form fields ... */}
               <div className="space-y-1">
                 <Label htmlFor="childsName">Child&apos;s Name (Optional)</Label>
                 <Input
@@ -197,66 +167,42 @@ export default function ParentHomePage() {
             </form>
           </CardContent>
         </Card>
-        {/* Children Overview Card - Column 2 & 3 */}
-        <Card className="md:col-span-2 lg:col-span-2">
+
+        <Card className="md:col-span-1 lg:col-span-2">
           {" "}
-          {/* Takes 2 columns on medium/large screens */}
-          <CardHeader>
-            <CardTitle>Your Children&apos;s Story Progress</CardTitle>
-            <CardDescription>
-              See which stories your children have completed.
-            </CardDescription>
+          {/* Spans 2 columns on large, 1 on medium for a 3-col layout */}
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-lg font-medium">Your Children</CardTitle>
+            <Users className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {dataError && <p className="text-red-500">{dataError}</p>}
             {!isLoadingData && !dataError && childrenData.length === 0 && (
               <p className="text-muted-foreground">
-                You haven&apos;t added any children yet.
+                You haven&apos;t added any children yet. Use the form on the
+                left to add your first child.
               </p>
             )}
             {!isLoadingData && !dataError && childrenData.length > 0 && (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {childrenData.map((child) => (
-                  <div key={child.id}>
-                    <h3 className="text-lg font-semibold mb-2">
-                      {child.name || child.username}
-                    </h3>
-                    {stories.length === 0 && (
-                      <p className="text-sm text-muted-foreground">
-                        No stories available to track progress.
-                      </p>
-                    )}
-                    <ul className="space-y-2">
-                      {stories.map((story) => {
-                        const progress = child.storyProgress?.find(
-                          (p) =>
-                            p.contentId === story.id && p.status === "completed"
-                        );
-                        return (
-                          <li
-                            key={story.id}
-                            className="flex items-center justify-between p-3 border rounded-md bg-slate-50 dark:bg-slate-800 text-sm"
-                          >
-                            <span className="flex items-center">
-                              <BookOpen className="mr-2 h-4 w-4 text-muted-foreground" />
-                              {story.title}
-                            </span>
-                            {progress ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-500">
-                                <title>{`Completed on ${new Date(
-                                  progress.completedAt!
-                                ).toLocaleDateString()}`}</title>
-                              </CheckCircle2>
-                            ) : (
-                              <Circle className="h-5 w-5 text-slate-400">
-                                <title>Not yet completed</title>
-                              </Circle>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
+                  <Link
+                    href={`/parent/child/${child.id}`}
+                    key={child.id}
+                    className="block hover:bg-muted/50 transition-colors rounded-lg border p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-md font-semibold">
+                          {child.name || "Unnamed Child"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          @{child.username}
+                        </p>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </Link>
                 ))}
               </div>
             )}
