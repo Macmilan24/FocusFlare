@@ -8,7 +8,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import Link from "next/link";
-import { Sparkles, BookOpen, Target, Palette } from "lucide-react";
+import { Sparkles, BookOpen, Target, Palette, Puzzle } from "lucide-react";
 
 interface SubjectCardProps {
   title: string;
@@ -50,6 +50,14 @@ const subjects: SubjectCardProps[] = [
     href: "/kid/creative",
     colorClass:
       "bg-purple-100 dark:bg-purple-900 border-purple-300 dark:border-purple-700",
+  },
+  {
+    title: "Quiz Zone",
+    description: "Test your knowledge with fun quizzes!",
+    icon: <Puzzle className="h-8 w-8" />, // Example icon
+    href: "/kid/quizzes", // Link to the new quiz list page
+    colorClass:
+      "bg-indigo-100 dark:bg-indigo-900 border-indigo-300 dark:border-indigo-700",
   },
 ];
 

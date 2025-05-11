@@ -2,10 +2,15 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import prisma from "@/lib/db/prisma";
+import { ArrowLeft, CheckCircle2, Circle, BookOpen } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { getChildProgressDetails } from "@/actions/progress.actions";
 
 interface ChildDetailPageProps {
   params: {
@@ -13,7 +18,6 @@ interface ChildDetailPageProps {
   };
 }
 
-// This is a Server Component
 export default async function ChildDetailPage({
   params,
 }: ChildDetailPageProps) {
@@ -23,96 +27,152 @@ export default async function ChildDetailPage({
   }
 
   const { childId } = params;
+  const { data: progressDetails, error } = await getChildProgressDetails(
+    childId
+  );
 
-  const parentChildLinkRecord = await prisma.parentChildLink.findUnique({
-    where: {
-      parentId_childId: {
-        parentId: session.user.id,
-        childId: childId,
-      },
-    },
-    include: {
-      child: {
-        select: {
-          id: true,
-          name: true,
-          username: true,
-        },
-      },
-    },
-  });
-
-  if (!parentChildLinkRecord || !parentChildLinkRecord.child) {
+  if (error || !progressDetails) {
     return (
       <div className="p-4 md:p-8 text-center">
-        <h1 className="text-2xl font-bold text-red-500">
-          Child Not Found or Access Denied
-        </h1>
-        <p>
-          The child details could not be loaded, or you may not have permission
-          to view this child.
-        </p>
-        <Button asChild className="mt-4">
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="mb-4 mr-auto block w-fit"
+        >
           <Link href="/parent/home">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Parent Dashboard
+            <ArrowLeft className="mr-2 h-4 w-4" /> Parent Dashboard
           </Link>
         </Button>
+        <h1 className="text-2xl font-bold text-red-500 mt-4">
+          Error Loading Progress
+        </h1>
+        <p>{error || "Could not load details for this child."}</p>
       </div>
     );
   }
 
-  const childUser = parentChildLinkRecord.child;
-  const childName = childUser.name || childUser.username || "Child";
+  const { child, stories, storyProgress } = progressDetails;
+  const childName = child.name || child.username || "Child";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 p-4 md:p-6">
       <div>
-        <Button asChild variant="outline" size="sm" className="mb-4">
+        <Button asChild variant="outline" size="sm" className="mb-6">
           <Link href="/parent/home">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to Parent Dashboard
           </Link>
         </Button>
         <h1 className="text-3xl font-bold">Progress Report for {childName}</h1>
-        <p className="text-muted-foreground">
-          Viewing details for @{childUser.username}
-        </p>
+        <p className="text-muted-foreground">@{child.username}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Story Completions</CardTitle>
+          <CardTitle className="text-xl">Story Completions</CardTitle>
+          <CardDescription>
+            Overview of stories your child has engaged with.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">
-            Detailed story progress will be shown here.
-          </p>
-          {/* Map over completed stories for this child */}
+          {stories.length === 0 ? (
+            <p className="text-muted-foreground">
+              No stories currently available in the library.
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {stories.map((story) => {
+                const progress = storyProgress.find(
+                  (p) => p.contentId === story.id
+                );
+                const isCompleted = progress?.status === "completed";
+                return (
+                  <li
+                    key={story.id}
+                    className={`flex items-center justify-between p-4 border rounded-lg shadow-sm transition-all
+                                                ${
+                                                  isCompleted
+                                                    ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700"
+                                                    : "bg-slate-50 dark:bg-slate-800"
+                                                }`}
+                  >
+                    <div className="flex items-center">
+                      <BookOpen
+                        className={`mr-3 h-5 w-5 ${
+                          isCompleted
+                            ? "text-green-600"
+                            : "text-muted-foreground"
+                        }`}
+                      />
+                      <div>
+                        <p className="font-medium">{story.title}</p>
+                        {story.description && (
+                          <p className="text-xs text-muted-foreground">
+                            {story.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end text-xs">
+                      {progress ? (
+                        <>
+                          {isCompleted ? (
+                            <span className="flex items-center font-semibold text-green-600">
+                              <CheckCircle2 className="mr-1 h-4 w-4" />{" "}
+                              Completed
+                            </span>
+                          ) : (
+                            <span className="flex items-center text-blue-600">
+                              {/* Icon for 'in progress' if we track that later */}
+                              In Progress
+                            </span>
+                          )}
+                          {progress.completedAt && isCompleted && (
+                            <span className="text-muted-foreground">
+                              on{" "}
+                              {new Date(
+                                progress.completedAt
+                              ).toLocaleDateString()}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="flex items-center text-muted-foreground">
+                          <Circle className="mr-1 h-4 w-4" /> Not Started
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </CardContent>
       </Card>
 
+      {/* Placeholder for Quiz Performance Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Quiz Performance</CardTitle>
+          <CardTitle className="text-xl">Quiz Performance</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            Quiz scores and attempts will be shown here.
+            Quiz scores and attempts will be shown here soon.
           </p>
         </CardContent>
       </Card>
 
+      {/* Placeholder for Badges Earned Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Badges Earned</CardTitle>
+          <CardTitle className="text-xl">Badges Earned</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            Collected badges and achievements will appear here.
+            Collected badges will appear here soon.
           </p>
         </CardContent>
       </Card>
-
-      {/* Placeholder for graphs */}
     </div>
   );
 }

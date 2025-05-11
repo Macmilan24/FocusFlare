@@ -1,7 +1,7 @@
 // app/(platform)/kid/stories/[storyId]/page.tsx
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getStoryById } from "@/actions/content.action";
+import { getStoryById } from "@/actions/content.actions";
 import Link from "next/link";
 
 import StoryPageView from "@/components/story/story-page-view";

@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getStoriesList } from "@/actions/content.action";
+import { getStoriesList } from "@/actions/content.actions";
 import {
   Card,
   CardContent,
