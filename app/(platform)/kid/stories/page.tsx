@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getStoriesList, StoryListItem } from "@/actions/content.action"; // Adjust path
+import { getStoriesList } from "@/actions/content.action";
 import {
   Card,
   CardContent,
@@ -54,7 +54,7 @@ export default async function StoriesListPage() {
               {story.coverImageUrl ? (
                 <div className="relative w-full h-48">
                   <Image
-                    src={story.coverImageUrl} // Ensure these images exist in /public
+                    src={story.coverImageUrl}
                     alt={story.title}
                     layout="fill"
                     objectFit="cover"

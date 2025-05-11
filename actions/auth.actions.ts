@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 import { auth } from "@/lib/auth";
 import { signIn as nextAuthSignIn } from "@/lib/auth";
@@ -77,7 +78,6 @@ export async function authenticate(
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((error as any)?.digest?.startsWith("NEXT_REDIRECT")) {
       throw error;
     }
@@ -170,7 +170,6 @@ export async function handleSignOut() {
   try {
     await nextAuthSignOut({ redirectTo: "/auth/signin" });
   } catch (error) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((error as any)?.digest?.startsWith("NEXT_REDIRECT")) {
       throw error;
     }
@@ -281,9 +280,7 @@ export async function addChild(
     console.error("Error adding child:", error);
 
     if (
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (error as any)?.code === "P2002" &&
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (error as any)?.meta?.target?.includes("username")
     ) {
       return {
