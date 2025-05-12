@@ -221,7 +221,6 @@ export default function QuizView({ quiz }: QuizViewProps) {
     setIsAdvancing(false);
   };
 
-  // Progress based on questions *attempted* or *current index*
   const questionsAttempted = Object.keys(selectedAnswers).length;
   const progressPercentage =
     totalQuestions > 0

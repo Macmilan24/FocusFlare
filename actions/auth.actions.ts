@@ -40,7 +40,17 @@ export interface ChildData {
   id: string;
   username: string | null;
   name: string | null;
-  storyProgress?: StoryProgress[]; // Array of progress for stories
+  storyProgress?: StoryProgress[];
+}
+
+export interface ChildDashboardOverview
+  extends Omit<ChildData, "storyProgress" | "quizProgress"> {
+  id: string;
+  username: string | null;
+  name: string | null;
+  avatarSeed?: string;
+  lastActivity?: string;
+  lastActivityDate?: Date | null;
 }
 
 export async function authenticate(
