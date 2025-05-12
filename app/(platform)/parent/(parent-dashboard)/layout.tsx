@@ -42,26 +42,40 @@ export default function ParentDashboardLayout({
       <div className="hidden md:block border-t">
         <div className="bg-background">
           <div className="grid lg:grid-cols-5 min-h-[calc(100vh-theme(spacing.16)-theme(spacing.16)-1px)]">
-            <aside className="lg:col-span-1 lg:border-r bg-muted/40 dark:bg-slate-900/50 p-4 lg:p-6">
+            {/* sidebar stays blue→indigo */}
+            <aside
+              className="lg:col-span-1 lg:border-r border-primary/20
+                              bg-gradient-to-b from-indigo-100 to-indigo-200
+                              dark:from-indigo-900 dark:to-indigo-800
+                              p-4 lg:p-6"
+            >
               <ScrollArea className="h-full">
                 <SidebarNav items={sidebarNavItems} />
               </ScrollArea>
             </aside>
-            <div className="lg:col-span-4 p-6 lg:p-8">{children}</div>
+            {/* main content tinted purple-light */}
+            <div
+              className="lg:col-span-4 p-6 lg:p-8
+                            bg-primary/10 dark:bg-primary/20
+                            rounded-lg shadow-lg"
+            >
+              {children}
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Mobile Layout - Stacks content, sidebar nav might be a drawer or top tabs later */}
+      {/* mobile */}
       <div className="block md:hidden p-4 space-y-6">
-        <div className="space-y-0.5 border-b pb-4">
-          <h2 className="text-xl font-bold tracking-tight">Parent Dashboard</h2>
+        <div className="space-y-0.5 border-b border-primary/20 pb-4">
+          <h2 className="text-xl font-bold text-primary">Parent Dashboard</h2>
           <p className="text-muted-foreground text-sm">
             Manage your family&apos;s learning.
           </p>
         </div>
-        {/* Simple Nav for Mobile (can be improved with a Drawer later) */}
-        <nav className="flex flex-col space-y-1">
+        <nav
+          className="flex flex-col space-y-1
+                        bg-indigo-100 dark:bg-indigo-800 p-2 rounded"
+        >
           {sidebarNavItems.map((item) => (
             <Link
               key={item.href}
@@ -72,7 +86,7 @@ export default function ParentDashboardLayout({
             </Link>
           ))}
         </nav>
-        <Separator />
+        <Separator className="border-primary/40" />
         {children}
       </div>
     </>
