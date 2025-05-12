@@ -1,23 +1,35 @@
+// app/(platform)/parent/(parent-dashboard)/layout.tsx
 import { SidebarNav } from "@/components/parent/sidebar-nav";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import Link from "next/link";
 
-export interface NavItem {
-  title: string;
-  href: string;
-  iconName?: keyof typeof import("lucide-react");
-}
-
-const sidebarNavItems: NavItem[] = [
-  { title: "Overview", href: "/parent/overview", iconName: "Home" },
-  { title: "My Children", href: "/parent/children", iconName: "Users" },
-  { title: "Add New Child", href: "/parent/add-child", iconName: "UserPlus" },
+const sidebarNavItems = [
   {
-    title: "Learning Resources",
-    href: "/parent/resources",
-    iconName: "BookText",
+    title: "Overview",
+    href: "/parent/overview",
+    iconName: "BarChart3" as keyof typeof import("lucide-react"),
   },
-  { title: "Settings", href: "/parent/settings", iconName: "Settings" },
+  {
+    title: "My Children",
+    href: "/parent/children",
+    iconName: "Users" as keyof typeof import("lucide-react"),
+  },
+  {
+    title: "Add Child",
+    href: "/parent/add-child",
+    iconName: "UserPlus" as keyof typeof import("lucide-react"),
+  },
+  {
+    title: "Resources",
+    href: "/parent/resources",
+    iconName: "BookText" as keyof typeof import("lucide-react"),
+  },
+  {
+    title: "Settings",
+    href: "/parent/settings",
+    iconName: "Settings" as keyof typeof import("lucide-react"),
+  },
 ];
 
 export default function ParentDashboardLayout({
@@ -27,33 +39,40 @@ export default function ParentDashboardLayout({
 }) {
   return (
     <>
-      <div className="hidden space-y-6 p-6 pb-16 md:block">
-        <div className="space-y-0.5">
-          <h2 className="text-2xl font-bold tracking-tight">
-            Parent Dashboard
-          </h2>
-          <p className="text-muted-foreground">
-            Manage your children&apos;s learning journey and track their
-            progress.
-          </p>
-        </div>
-        <Separator className="my-6" />
-        <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
-          <aside className="-mx-4 lg:w-1/5">
-            {" "}
-            <ScrollArea className="h-[calc(100vh-250px)]">
-              <SidebarNav items={sidebarNavItems} />
-            </ScrollArea>
-          </aside>
-          <div className="flex-1 lg:max-w-4xl">{children}</div>{" "}
-          {/* Main content area */}
+      <div className="hidden md:block border-t">
+        <div className="bg-background">
+          <div className="grid lg:grid-cols-5 min-h-[calc(100vh-theme(spacing.16)-theme(spacing.16)-1px)]">
+            <aside className="lg:col-span-1 lg:border-r bg-muted/40 dark:bg-slate-900/50 p-4 lg:p-6">
+              <ScrollArea className="h-full">
+                <SidebarNav items={sidebarNavItems} />
+              </ScrollArea>
+            </aside>
+            <div className="lg:col-span-4 p-6 lg:p-8">{children}</div>
+          </div>
         </div>
       </div>
 
-      <div className="block space-y-6 p-4 pb-16 md:hidden">
-        <p className="text-center text-muted-foreground">
-          Parent dashboard is best viewed on larger screens.
-        </p>
+      {/* Mobile Layout - Stacks content, sidebar nav might be a drawer or top tabs later */}
+      <div className="block md:hidden p-4 space-y-6">
+        <div className="space-y-0.5 border-b pb-4">
+          <h2 className="text-xl font-bold tracking-tight">Parent Dashboard</h2>
+          <p className="text-muted-foreground text-sm">
+            Manage your family&apos;s learning.
+          </p>
+        </div>
+        {/* Simple Nav for Mobile (can be improved with a Drawer later) */}
+        <nav className="flex flex-col space-y-1">
+          {sidebarNavItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="text-muted-foreground hover:text-primary p-2 rounded-md text-sm"
+            >
+              {item.title}
+            </Link>
+          ))}
+        </nav>
+        <Separator />
         {children}
       </div>
     </>
