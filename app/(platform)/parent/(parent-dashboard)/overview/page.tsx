@@ -1,40 +1,41 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Users,
   BookText,
-  BarChart3,
   Activity,
-  ShieldCheck,
-  BookOpen,
+  CheckCircle,
+  BookOpenText,
 } from "lucide-react";
 import Link from "next/link";
 import prisma from "@/lib/db/prisma";
-
-async function getParentDashboardStats(parentId: string) {
-  const children = await prisma.parentChildLink.count({
-    where: { parentId: parentId },
-  });
-  return {
-    totalChildren: children,
-    storiesCompleted: 0,
-    averageQuizScore: 0,
-  };
-}
+import {
+  getParentDashboardStats,
+  ParentDashboardStats,
+} from "@/actions/parent.actions";
 
 export default async function ParentOverviewPage() {
   const session = await auth();
   if (!session?.user || session.user.role !== "PARENT") {
     redirect("/auth/signin");
   }
+  const { stats, error } = await getParentDashboardStats();
 
+  // Basic error handling for stats
+  if (error) {
+    // You might want a more prominent error display for stats failing to load
+    console.error("Error loading dashboard stats:", error);
+  }
+
+  const displayStats: ParentDashboardStats = stats || {
+    // Fallback if stats are undefined
+    totalChildren: 0,
+    totalStoriesCompleted: 0,
+    totalQuizzesPassed: 0,
+    averageQuizScore: null,
+    quizzesTakenCount: 0,
+  };
   return (
     <div className="space-y-8">
       <div>
@@ -46,59 +47,69 @@ export default async function ParentOverviewPage() {
         </p>
       </div>
 
-      {/* Stats Cards - This can be a grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="shadow-lg hover:shadow-primary/20 transition-shadow">
-          {" "}
-          {/* Subtle hover shadow */}
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-primary/20 bg-gradient-to-r from-primary/5 via-background to-background">
-            {" "}
-            {/* Gradient accent header */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="border-primary/30 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-primary">
               Total Children
             </CardTitle>
             <Users className="h-4 w-4 text-primary/70" />
           </CardHeader>
-          <CardContent className="pt-4">
+          <CardContent>
             <div className="text-3xl font-bold text-foreground">
-              {/* {stats.totalChildren} */} N/A
+              {displayStats.totalChildren}
             </div>
             <Link
               href="/parent/children"
               className="text-xs text-muted-foreground hover:text-primary hover:underline"
             >
-              View all children →
+              Manage children →
             </Link>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="border-green-500/30 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Stories Completed
+            <CardTitle className="text-sm font-medium text-green-600">
+              Stories Completed
             </CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
+            <BookOpenText className="h-4 w-4 text-green-600/70" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {/* {stats.storiesCompleted} */} N/A
+            <div className="text-3xl font-bold text-foreground">
+              {displayStats.totalStoriesCompleted}
             </div>
             <p className="text-xs text-muted-foreground">Across all children</p>
           </CardContent>
         </Card>
-        <Card>
+
+        <Card className="border-purple-500/30 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Average Quiz Score
+            <CardTitle className="text-sm font-medium text-purple-600">
+              Quizzes Passed
             </CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <CheckCircle className="h-4 w-4 text-purple-600/70" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {/* {stats.averageQuizScore}% */} N/A
+            <div className="text-3xl font-bold text-foreground">
+              {displayStats.totalQuizzesPassed}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Across all quizzes taken
-            </p>
+            {displayStats.averageQuizScore !== null && (
+              <p className="text-xs text-muted-foreground">
+                Avg. Score: {displayStats.averageQuizScore}%
+              </p>
+            )}
+            {displayStats.averageQuizScore === null &&
+              displayStats.quizzesTakenCount > 0 && ( // Assuming quizzesTakenCount is part of stats if you want this detail
+                <p className="text-xs text-muted-foreground">
+                  No quizzes passed yet.
+                </p>
+              )}
+            {displayStats.quizzesTakenCount === 0 && ( // Assuming quizzesTakenCount is part of stats
+              <p className="text-xs text-muted-foreground">
+                No quizzes taken yet.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
