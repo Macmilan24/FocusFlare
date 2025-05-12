@@ -4,6 +4,7 @@
 import prisma from "@/lib/db/prisma"; // Adjust path
 import { auth } from "@/lib/auth"; // Adjust path
 import { Role, ContentType } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 
 export interface ParentDashboardStats {
   totalChildren: number;
@@ -11,6 +12,13 @@ export interface ParentDashboardStats {
   totalQuizzesPassed: number;
   averageQuizScore: number | null;
   quizzesTakenCount: number;
+}
+
+export interface UpdateProfileFormState {
+  message?: string;
+  error?: string;
+  success?: boolean;
+  updatedName?: string;
 }
 
 export async function getParentDashboardStats(): Promise<{
@@ -101,5 +109,47 @@ export async function getParentDashboardStats(): Promise<{
   } catch (error) {
     console.error("Error fetching parent dashboard stats:", error);
     return { error: "Failed to load dashboard statistics." };
+  }
+}
+
+// -- Update Profile
+export async function updateParentProfile(
+  prevState: UpdateProfileFormState | undefined,
+  formData: FormData
+): Promise<UpdateProfileFormState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== Role.PARENT) {
+    return { error: "Unauthorized." };
+  }
+  const userId = session.user.id;
+
+  try {
+    const name = formData.get("name") as string;
+
+    if (name === null || name.trim() === "") {
+      // Allow empty string to clear name if desired, or add validation
+      // If name is required, add: return { error: "Name cannot be empty." };
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: name.trim() === "" ? null : name.trim(), // Store null if name is cleared
+      },
+      select: { name: true }, // Only select the name to return
+    });
+
+    revalidatePath("/parent/settings");
+    revalidatePath("/parent/overview");
+    revalidatePath("/(platform)/layout", "layout");
+
+    return {
+      success: true,
+      message: "Profile updated successfully!",
+      updatedName: updatedUser.name || "",
+    };
+  } catch (error) {
+    console.error("Error updating parent profile:", error);
+    return { error: "Failed to update profile." };
   }
 }
