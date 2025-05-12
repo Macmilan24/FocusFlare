@@ -107,10 +107,15 @@ model LearningContent {
 }
 
 model UserLearningProgress {
-  id           String          @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String          @db.ObjectId
-  contentId    String          @db.ObjectId
-  status       String
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String @db.ObjectId
+  contentId String @db.ObjectId
+  status    String
+  score     Int?
+  progress  Int?
+  answers   Json?
+  details   Json?
+
   completedAt  DateTime?
   startedAt    DateTime        @default(now())
   lastAccessed DateTime        @updatedAt

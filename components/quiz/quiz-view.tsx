@@ -1,7 +1,7 @@
 // components/quiz/quiz-view.tsx
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { QuizData, QuizQuestion, QuizOption } from "@/actions/content.actions"; // Import types
 import { Button } from "@/components/ui/button";
 import {
@@ -19,7 +19,6 @@ import {
   CheckCircle,
   XCircle,
   ChevronsRight,
-  Send,
   RotateCcw,
   BookOpen,
   Sparkles,
@@ -38,7 +37,7 @@ interface QuizViewProps {
 
 // Helper type
 type SelectedAnswersMap = {
-  [questionId: string]: string; // questionId -> selectedOptionId
+  [questionId: string]: string;
 };
 
 // Define structure for submission results
@@ -48,7 +47,7 @@ interface QuizSubmissionResult {
   totalQuestions: number;
   results: Array<{
     questionId: string;
-    selectedOptionId: string;
+    selectedOptionId: string | null;
     correctOptionId: string;
     isCorrect: boolean;
     explanation?: string | null;
@@ -112,77 +111,78 @@ export default function QuizView({ quiz }: QuizViewProps) {
     }
   };
 
-  const handleSubmitQuiz = async () => {
+  const handleSubmitQuiz = () => {
     if (Object.keys(selectedAnswers).length !== totalQuestions) {
       toast.warning("Please answer all questions before submitting.", {
         duration: 3000,
+        description: "Make sure you've selected an answer for every question.",
       });
       return;
     }
+
     startSubmitTransition(async () => {
-      // --- SIMULATED RESULT (REMOVE WHEN SERVER ACTION `submitQuizAnswers` IS FULLY BUILT) ---
-      console.log("Submitting answers (simulated):", selectedAnswers);
-      let correctCount = 0;
-      const detailedResults = quiz.questions.map((q) => {
-        const selectedOptionId = selectedAnswers[q.id];
-        const isCorrect = selectedOptionId === q.correctOptionId;
-        if (isCorrect) correctCount++;
-        return {
-          questionId: q.id,
-          selectedOptionId: selectedOptionId,
-          correctOptionId: q.correctOptionId,
-          isCorrect: isCorrect,
-          explanation: q.explanation,
-          questionText: q.text,
-          options: q.options,
-        };
+      toast.info("Submitting your answers...", {
+        id: "submitting-toast",
+        duration: 10000,
       });
-      const scorePercentage =
-        totalQuestions > 0
-          ? Math.round((correctCount / totalQuestions) * 100)
-          : 0;
-      const passed = quiz.passingScorePercentage
-        ? scorePercentage >= quiz.passingScorePercentage
-        : true; // Default to pass if no passing score defined
 
-      const simulatedResultData: QuizSubmissionResult = {
-        scorePercentage: scorePercentage,
-        correctAnswers: correctCount,
-        totalQuestions: totalQuestions,
-        results: detailedResults,
-        passed: passed,
-        message: passed
-          ? "Great job! You passed!"
-          : "Good effort! Review your answers.",
-      };
-      // --- END SIMULATED RESULT ---
+      const serverResult = await submitQuizAnswers(quiz.id, selectedAnswers);
 
-      // TODO: Replace simulation with actual call to `submitQuizAnswers` server action
-      // const serverResult = await submitQuizAnswers(quiz.id, selectedAnswers);
-      // if (serverResult.error || !serverResult.data) {
-      //   toast.error(serverResult.error || "Failed to submit quiz.");
-      //   setSubmissionResult(null);
-      // } else {
-      //   setSubmissionResult(serverResult.data);
-      //   toast.success(serverResult.data.message || "Quiz results are in!");
-      //   if (serverResult.data.passed) {
-      //     confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
-      //   }
-      //   setQuizFinished(true);
-      // }
-
-      // Using simulated result for now:
-      setSubmissionResult(simulatedResultData);
-      toast.success(simulatedResultData.message);
-      if (simulatedResultData.passed) {
-        confetti({
-          particleCount: 150,
-          spread: 90,
-          origin: { y: 0.6 },
-          colors: ["#6366f1", "#a855f7", "#ec4899", "#f59e0b"],
+      if (serverResult.error || !serverResult.data) {
+        toast.error(
+          serverResult.error || "Failed to submit quiz. Please try again.",
+          {
+            id: "submitting-toast",
+            duration: 5000,
+          }
+        );
+        setSubmissionResult(null);
+      } else {
+        setSubmissionResult(serverResult.data);
+        toast.success(serverResult.data.message || "Quiz results are in!", {
+          id: "submitting-toast",
+          duration: 4000,
         });
+
+        if (serverResult.data.passed) {
+          const confettiDefaults = {
+            spread: 90,
+            ticks: 50,
+            gravity: 0.8,
+            decay: 0.94,
+            startVelocity: 30,
+            colors: [
+              "#6366f1",
+              "#a855f7",
+              "#ec4899",
+              "#f59e0b",
+              "#22c55e",
+              "#ef4444",
+            ],
+          };
+
+          function shootConfetti() {
+            confetti({
+              ...confettiDefaults,
+              particleCount: 80,
+              scalar: 1.2,
+              shapes: ["star"],
+            });
+
+            confetti({
+              ...confettiDefaults,
+              particleCount: 30,
+              scalar: 0.75,
+              shapes: ["circle"],
+            });
+          }
+
+          setTimeout(shootConfetti, 0);
+          setTimeout(shootConfetti, 100);
+          setTimeout(shootConfetti, 200);
+        }
+        setQuizFinished(true);
       }
-      setQuizFinished(true);
     });
   };
 
@@ -199,8 +199,6 @@ export default function QuizView({ quiz }: QuizViewProps) {
     totalQuestions > 0
       ? (Object.keys(selectedAnswers).length / totalQuestions) * 100
       : 0;
-  // Or, for question-by-question progress:
-  // const progressPercentage = totalQuestions > 0 ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0;
 
   if (!currentQuestion && !quizFinished) {
     return (
