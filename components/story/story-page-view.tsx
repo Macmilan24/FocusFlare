@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
 import { markStoryAsCompleted } from "@/actions/content.actions";
+import { refreshClientSession } from "@/actions/auth.actions";
 import { toast } from "sonner";
 import Image from "next/image"; // Import Next.js Image component
 
@@ -65,6 +66,7 @@ export default function StoryPageView({ story }: StoryPageViewProps) {
           icon: <PartyPopper className="h-5 w-5" />,
           duration: 3000,
         });
+        await refreshClientSession({ points: result.newPointsTotal });
       } else {
         toast.error(result.error || "Could not save your progress.", {
           icon: <AlertTriangle className="h-5 w-5" />,

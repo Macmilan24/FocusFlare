@@ -56,6 +56,11 @@ export interface ChildDashboardOverview
   lastActivityDate?: Date | null;
 }
 
+interface SessionUpdateData {
+  name?: string;
+  points?: number;
+}
+
 export async function authenticate(
   prevState: LoginFormState | undefined,
   formData: FormData
@@ -391,13 +396,10 @@ export async function getChildrenForParent(): Promise<{
   }
 }
 
-export async function refreshClientSession(newUserData: { name?: string }) {
+export async function refreshClientSession(newUserData: SessionUpdateData) {
   try {
     await nextAuthServerUpdateSession({ user: newUserData }); // Pass the user data to be updated
-    console.log(
-      "Server-side session update triggered for name:",
-      newUserData.name
-    );
+    console.log("Server-side session update triggered for name:", newUserData);
     return { success: true };
   } catch (error) {
     console.error("Error refreshing client session via server action:", error);

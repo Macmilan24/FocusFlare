@@ -12,12 +12,14 @@ declare module "next-auth" {
       id: string;
       role?: Role | null;
       username?: string | null;
+      points?: number;
     } & Omit<NextAuthUser, "id">;
   }
 
   interface User extends NextAuthUser {
     role?: Role | null;
     username?: string | null;
+    points?: number;
   }
 }
 
@@ -26,5 +28,6 @@ declare module "next-auth/jwt" {
     id: string;
     role?: Role | null;
     username?: string | null;
+    points?: number;
   }
 }
