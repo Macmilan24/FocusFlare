@@ -62,9 +62,7 @@ export default async function ParentOverviewPage() {
           Dashboard Overview
         </h2>
         <p className="text-muted-foreground mt-1">
-          {" "}
-          {/* Added mt-1 for spacing */}A quick look at your family&apos;s
-          activity and helpful resources.
+          A quick look at your family&apos;s activity and helpful resources.
         </p>
       </div>
 

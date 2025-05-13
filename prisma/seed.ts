@@ -44,12 +44,41 @@ async function main() {
   console.log(`Seeding finished.`);
 
   // --- Seed Learning Content (Stories) ---
+
+  const mathCourse = await prisma.course.upsert({
+    where: { title: "Beginner Math Fun" },
+    update: {},
+    create: {
+      title: "Beginner Math Fun",
+      description: "Learn basic math concepts with exciting activities!",
+      subject: "Mathematics", // Matches your KidHomePage subject
+      coverImageUrl: "/images/courses/math_beginners.png", // Placeholder
+      published: true,
+    },
+  });
+
+  const readingCourse = await prisma.course.upsert({
+    where: { title: "Reading Adventures" },
+    update: {},
+    create: {
+      title: "Reading Adventures",
+      description: "Explore the world of words and wonderful stories.",
+      subject: "Reading", // Matches your KidHomePage subject
+      coverImageUrl: "/images/courses/reading_adventures.png",
+      published: true,
+    },
+  });
+  console.log("Courses seeded.");
+
   const storiesToSeed = [
     {
       title: "The Little Blue Rocket",
       description: "A story about a brave little rocket exploring space.",
-      contentType: ContentType.STORY,
-      subject: "StoryTime",
+      contentType: ContentType.STORY, // Still a story, but can be part of a course as a "lesson"
+      subject: "Reading", // Align subject with course
+      coverImageUrl: "/images/stories/covers/blue_rocket_cover.png", // Now top-level
+      courseId: readingCourse.id, // Link to course
+      orderInCourse: 1,
       content: {
         coverImageUrl: "/images/stories/covers/blue_rocket_cover.png", // Example path
         pages: [
@@ -109,7 +138,10 @@ async function main() {
       title: "Simple Math Quiz",
       description: "Test your basic addition skills!",
       contentType: ContentType.QUIZ,
-      subject: "QuizZone", // New subject for quizzes
+      subject: "Mathematics",
+      coverImageUrl: "/images/quizzes/math_quiz_cover.png", // Add covers for quizzes too
+      courseId: mathCourse.id,
+      orderInCourse: 1, // New subject for quizzes
       content: {
         questions: [
           {

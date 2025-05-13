@@ -95,12 +95,17 @@ enum ContentType {
 }
 
 model LearningContent {
-  id           String                 @id @default(auto()) @map("_id") @db.ObjectId
-  title        String
-  description  String?
-  contentType  ContentType
-  subject      String
-  content      Json
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  title         String
+  description   String?
+  contentType   ContentType
+  subject       String // Can still be useful for individual items not in a course
+  content       Json
+  coverImageUrl String?
+  courseId      String?     @db.ObjectId
+  course        Course?     @relation("CourseLessons", fields: [courseId], references: [id], onDelete: SetNull)
+  orderInCourse Int?
+
   createdAt    DateTime               @default(now())
   updatedAt    DateTime               @updatedAt
   userProgress UserLearningProgress[]
@@ -155,4 +160,17 @@ model UserBadge {
   @@unique([userId, badgeId]) // A user can earn each badge only once
   @@index([userId])
   @@index([badgeId])
+}
+
+model Course {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  title         String   @unique
+  description   String?
+  subject       String // e.g., "Math", "Reading"
+  coverImageUrl String?
+  published     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  lessons LearningContent[] @relation("CourseLessons")
 }
