@@ -2,7 +2,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import prisma from "@/lib/db/prisma";
 import { auth } from "@/lib/auth";
-import { ContentType, Role } from "@prisma/client";
+import { checkAndAwardStoryBadges } from "./gamification.actions";
+import { ContentType, Role, Badge } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 
 export interface StoryListItem {
   id: string;
@@ -22,6 +24,8 @@ export interface MarkCompletionResult {
   success?: boolean;
   message?: string;
   error?: string;
+  newPointsTotal?: number;
+  awardedBadge?: Badge | null;
 }
 export interface StoryPageData {
   text: string;
@@ -180,53 +184,112 @@ export async function markStoryAsCompleted(
   contentId: string
 ): Promise<MarkCompletionResult> {
   const session = await auth();
-
   if (!session?.user || session.user.role !== Role.CHILD) {
-    return {
-      error:
-        "Unauthorized: Only children can mark stories as completed for themselves.",
-    };
+    return { error: "Unauthorized." };
   }
   const userId = session.user.id;
+  if (!contentId) return { error: "Content ID required." };
 
-  if (!contentId) {
-    return { error: "Content ID is required." };
-  }
+  const POINTS_FOR_STORY = 10;
+  console.log(
+    `[markStoryAsCompleted] User: ${userId}, Content: ${contentId}, Attempting to award: ${POINTS_FOR_STORY} points`
+  );
 
   try {
-    await prisma.userLearningProgress.upsert({
-      where: {
-        userId_contentId: {
-          // Using the compound unique key
-          userId: userId,
-          contentId: contentId,
+    const resultInTransaction = await prisma.$transaction(async (tx) => {
+      console.log("[Transaction] Upserting progress...");
+      const progress = await tx.userLearningProgress.upsert({
+        where: { userId_contentId: { userId, contentId } },
+        update: {
+          status: "completed",
+          completedAt: new Date(),
+          lastAccessed: new Date(),
         },
-      },
-      update: {
-        // If record exists, update status and completedAt
-        status: "completed",
-        completedAt: new Date(),
-        lastAccessed: new Date(),
-      },
-      create: {
-        userId: userId,
-        contentId: contentId,
-        status: "completed",
-        completedAt: new Date(),
-        startedAt: new Date(),
-        lastAccessed: new Date(),
-      },
+        create: {
+          userId,
+          contentId,
+          status: "completed",
+          completedAt: new Date(),
+          startedAt: new Date(),
+          lastAccessed: new Date(),
+        },
+        select: { status: true }, // Only need status for the condition
+      });
+      console.log("[Transaction] Progress upserted. Status:", progress.status);
+
+      let finalPoints = 0;
+
+      if (progress.status === "completed") {
+        console.log(
+          "[Transaction] Progress status is 'completed'. Fetching current user points..."
+        );
+        const userBeforePointUpdate = await tx.user.findUnique({
+          where: { id: userId },
+          select: { points: true },
+        });
+
+        if (!userBeforePointUpdate) {
+          console.error(
+            "[Transaction] CRITICAL: User not found during point update!"
+          );
+          throw new Error("User not found for point update."); // This will rollback the transaction
+        }
+
+        const currentPoints = userBeforePointUpdate.points || 0; // Default to 0 if points is null
+        console.log(
+          "[Transaction] User current points BEFORE explicit update:",
+          currentPoints
+        );
+
+        finalPoints = currentPoints + POINTS_FOR_STORY;
+        console.log("[Transaction] Attempting to SET points to:", finalPoints);
+
+        const updatedUser = await tx.user.update({
+          where: { id: userId },
+          data: {
+            points: finalPoints, // Explicitly SET the new total
+          },
+          select: { points: true },
+        });
+        console.log(
+          "[Transaction] Points SET. New total points from DB:",
+          updatedUser.points
+        );
+        finalPoints = updatedUser.points; // Update finalPoints with actual value from DB
+      } else {
+        // If progress status wasn't 'completed' (e.g., already completed before)
+        // Fetch current points to return accurately
+        const currentUser = await tx.user.findUnique({
+          where: { id: userId },
+          select: { points: true },
+        });
+        finalPoints = currentUser?.points || 0;
+        console.log(
+          "[Transaction] Points not incremented (status not 'completed' in this upsert). Current points:",
+          finalPoints
+        );
+      }
+      return { newPointsTotal: finalPoints };
     });
-    return { success: true, message: "Story marked as completed!" };
+
+    const awardedBadge = await checkAndAwardStoryBadges(userId);
+
+    revalidatePath("/kid/home");
+
+    return {
+      success: true,
+      message: `Story complete! +${POINTS_FOR_STORY} points! Your new total: ${resultInTransaction.newPointsTotal}.`,
+      newPointsTotal: resultInTransaction.newPointsTotal,
+      awardedBadge,
+    };
   } catch (error) {
     console.error(
-      `Error marking story ${contentId} as completed for user ${userId}:`,
+      `Error marking story ${contentId} completed for user ${userId}:`,
       error
     );
-    return { error: "Failed to mark story as completed." };
+    return { error: "Failed to mark story as completed or award points." };
   }
 }
-
 // -- Quizzess List
 
 export async function getQuizzesList(): Promise<{

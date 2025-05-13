@@ -8,7 +8,22 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import Link from "next/link";
-import { Sparkles, BookOpen, Target, Palette, Puzzle } from "lucide-react";
+import {
+  Sparkles,
+  BookOpen,
+  Target,
+  Palette,
+  Puzzle,
+  Gem,
+  Award,
+} from "lucide-react";
+import { getEarnedBadgesForUser } from "@/actions/gamification.actions";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SubjectCardProps {
   title: string;
@@ -71,16 +86,82 @@ export default async function KidHomePage() {
     redirect("/parent/home");
   }
 
+  const userPoints = session.user.points || 0;
+  const { badges: earnedBadges, error: badgesError } =
+    await getEarnedBadgesForUser(session.user.id);
+
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
-          Welcome, {session.user.username || session.user.name || "Explorer"}!
-        </h1>
-        <p className="mt-3 text-xl text-gray-600 dark:text-gray-400">
-          Ready for an adventure in learning?
-        </p>
+    <div className="p-4 md:p-8 space-y-8">
+      <div className="mb-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="text-center sm:text-left">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">
+            Welcome, {session.user.username || session.user.name || "Explorer"}!
+          </h1>
+          <p className="mt-3 text-xl text-gray-600 dark:text-gray-400">
+            Ready for an adventure in learning?
+          </p>
+        </div>
+        <Card className="p-4 shadow-md bg-amber-100 dark:bg-amber-800/30 border-amber-400 dark:border-amber-600 min-w-[150px]">
+          <div className="flex items-center justify-center space-x-2">
+            <Gem className="h-7 w-7 text-amber-500 dark:text-amber-400" />
+            <div>
+              <p className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                Your Points
+              </p>
+              <p className="text-2xl font-bold text-amber-600 dark:text-amber-200">
+                {userPoints}
+              </p>
+            </div>
+          </div>
+        </Card>
       </div>
+
+      {earnedBadges && earnedBadges.length > 0 && (
+        <Card className="bg-gradient-to-r from-yellow-50 via-amber-50 to-orange-50 dark:from-slate-800 dark:via-yellow-900/30 dark:to-orange-900/30 border-amber-300 dark:border-amber-700">
+          <CardHeader>
+            <CardTitle className="text-xl font-semibold flex items-center text-amber-700 dark:text-amber-300">
+              <Award className="mr-2 h-6 w-6" /> My Awesome Badges!
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {badgesError && (
+              <p className="text-red-500 text-sm">{badgesError}</p>
+            )}
+            <TooltipProvider delayDuration={100}>
+              <div className="flex flex-wrap gap-4">
+                {earnedBadges.map((badge) => (
+                  <Tooltip key={badge.id}>
+                    <TooltipTrigger asChild>
+                      <div className="flex flex-col items-center p-3 border border-amber-400 dark:border-amber-600 rounded-lg bg-white dark:bg-slate-700 shadow-sm w-24 h-28 hover:scale-105 transition-transform">
+                        {/* Placeholder for actual badge icon - use Lucide icon based on badge.iconSlug */}
+                        {/* For now, a generic Award icon */}
+                        <Award className="h-10 w-10 text-yellow-500 dark:text-yellow-400 mb-1" />
+                        <p className="text-xs font-medium text-center truncate w-full">
+                          {badge.name}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {new Date(badge.earnedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-semibold">{badge.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {badge.description}
+                      </p>
+                      {badge.criteriaText && (
+                        <p className="text-xs italic mt-1">
+                          Criteria: {badge.criteriaText}
+                        </p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            </TooltipProvider>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {subjects.map((subject) => (

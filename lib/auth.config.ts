@@ -74,35 +74,86 @@ export default {
     signIn: "/auth/signin",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session: sessionFromUpdate }) {
+      // Renamed 'session' param to 'sessionFromUpdate' for clarity
+      console.log("[JWT Callback] Fired. Trigger:", trigger);
+      console.log("[JWT Callback] Initial Token:", JSON.stringify(token));
+      console.log(
+        "[JWT Callback] User object (on signin):",
+        JSON.stringify(user)
+      );
+      console.log(
+        "[JWT Callback] Session from update trigger:",
+        JSON.stringify(sessionFromUpdate)
+      );
+
       if (user) {
-        // @ts-expect-error user is not defined in the type of token
+        // @ts-expect-error 'id' might not be on NextAuth 'User' type initially
         token.id = user.id;
         token.role = user.role as Role;
         token.username = user.username;
         token.name = user.name;
         token.image = user.image;
         token.email = user.email;
+
+        if (user.points !== undefined) {
+          token.points = user.points;
+        } else {
+          // Fetch points if not on initial user obj, e.g. from DB if user.id exists
+          // This part is optional if session update mechanism is robust
+        }
       }
 
+      // IMPORTANT: Handle session updates triggered by unstable_update
+      if (trigger === "update" && sessionFromUpdate?.user) {
+        console.log(
+          "[JWT Callback] Trigger is 'update'. Merging data from sessionFromUpdate.user"
+        );
+        if (sessionFromUpdate.user.name !== undefined)
+          token.name = sessionFromUpdate.user.name;
+        if (sessionFromUpdate.user.email !== undefined)
+          token.email = sessionFromUpdate.user.email;
+        if (sessionFromUpdate.user.image !== undefined)
+          token.image = sessionFromUpdate.user.image;
+        if (sessionFromUpdate.user.points !== undefined) {
+          token.points = sessionFromUpdate.user.points;
+          console.log(
+            "[JWT Callback] Updated token.points from sessionFromUpdate:",
+            token.points
+          );
+        }
+        // Add any other fields from session.user you want to be updatable
+      }
+      console.log("[JWT Callback] Final Token:", JSON.stringify(token));
       return token;
     },
 
     async session({ session, token }) {
+      console.log("[Session Callback] Fired.");
+      console.log("[Session Callback] Token received:", JSON.stringify(token));
+      console.log(
+        "[Session Callback] Original session.user:",
+        JSON.stringify(session.user)
+      );
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as Role | null | undefined;
+        session.user.role = token.role as Role;
         session.user.username = token.username as string | null | undefined;
-        if (token.name !== undefined)
-          session.user.name = token.name as string | null | undefined;
+        session.user.name = token.name as string | null | undefined;
+        session.user.image = token.image as string | null | undefined;
+        // @ts-expect-error Defaulting points if not on token
+        session.user.email = token.email as string | null | undefined;
 
-        if (token.email !== undefined) {
-          // @ts-expect-error email is not defined in the type of session.user
-          session.user.email = token.email as string | null | undefined;
+        if (token.points !== undefined) {
+          session.user.points = token.points as number;
+        } else {
+          session.user.points = 0; // Or keep as undefined if your type allows
         }
-        if (token.image !== undefined)
-          session.user.image = token.image as string | null | undefined;
       }
+      console.log(
+        "[Session Callback] Modified session.user:",
+        JSON.stringify(session.user)
+      );
       return session;
     },
 

@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
-import { auth } from "@/lib/auth";
+import {
+  auth,
+  unstable_update as nextAuthServerUpdateSession,
+} from "@/lib/auth";
 import { signIn as nextAuthSignIn } from "@/lib/auth";
 import { signOut as nextAuthSignOut } from "@/lib/auth";
 import { AuthError } from "next-auth";
@@ -40,7 +43,22 @@ export interface ChildData {
   id: string;
   username: string | null;
   name: string | null;
-  storyProgress?: StoryProgress[]; // Array of progress for stories
+  storyProgress?: StoryProgress[];
+}
+
+export interface ChildDashboardOverview
+  extends Omit<ChildData, "storyProgress" | "quizProgress"> {
+  id: string;
+  username: string | null;
+  name: string | null;
+  avatarSeed?: string;
+  lastActivity?: string;
+  lastActivityDate?: Date | null;
+}
+
+interface SessionUpdateData {
+  name?: string;
+  points?: number;
 }
 
 export async function authenticate(
@@ -375,5 +393,16 @@ export async function getChildrenForParent(): Promise<{
   } catch (error) {
     console.error("Error fetching children with progress:", error);
     return { error: "Failed to fetch children's data." };
+  }
+}
+
+export async function refreshClientSession(newUserData: SessionUpdateData) {
+  try {
+    await nextAuthServerUpdateSession({ user: newUserData }); // Pass the user data to be updated
+    console.log("Server-side session update triggered for name:", newUserData);
+    return { success: true };
+  } catch (error) {
+    console.error("Error refreshing client session via server action:", error);
+    return { success: false, error: "Could not refresh session." };
   }
 }

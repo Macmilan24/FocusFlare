@@ -1,8 +1,47 @@
-import { PrismaClient, ContentType, Prisma } from "@prisma/client";
+import { PrismaClient, ContentType, Prisma, Badge } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log(`Start seeding ...`);
+  // --- NEW: Seed Badges ---
+  console.log("Seeding badges...");
+  const badgesToSeed: Omit<Badge, "id" | "createdAt" | "userBadges">[] = [
+    // Omit fields Prisma handles
+    {
+      name: "Story Novice",
+      description: "Welcome to the world of stories!",
+      iconSlug: "BookHeart", // Example Lucide icon name
+      criteriaText: "Complete your first story.",
+    },
+    {
+      name: "Quiz Challenger",
+      description: "You faced your first quiz challenge!",
+      iconSlug: "Sparkles", // Example Lucide icon name
+      criteriaText: "Complete your first quiz.",
+    },
+    {
+      name: "Bookworm Beginner",
+      description: "You're on your way to becoming a great reader!",
+      iconSlug: "LibraryBig",
+      criteriaText: "Complete 3 stories.",
+    },
+    {
+      name: "Puzzle Pro",
+      description: "You've mastered the basics of quizzing!",
+      iconSlug: "Puzzle",
+      criteriaText: "Pass 3 quizzes.",
+    },
+  ];
+
+  for (const badgeData of badgesToSeed) {
+    await prisma.badge.upsert({
+      where: { name: badgeData.name },
+      update: badgeData,
+      create: badgeData,
+    });
+    console.log(`Created/updated badge: ${badgeData.name}`);
+  }
+
+  console.log(`Seeding finished.`);
 
   // --- Seed Learning Content (Stories) ---
   const storiesToSeed = [

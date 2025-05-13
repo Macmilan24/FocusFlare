@@ -1,47 +1,42 @@
 // app/(platform)/layout.tsx
-import { auth } from "@/lib/auth";
-import { Toaster } from "@/components/ui/sonner";
-import { SignOutButton } from "@/components/auth/signout-button";
 import Link from "next/link";
+import { Toaster } from "sonner";
+import { UserNav } from "@/components/layout/user-nav"; // Import UserNav
+import { Sparkles } from "lucide-react";
 
-export default async function PlatformLayout({
+export default function PlatformLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth(); // Get session on the server
-
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="bg-gray-800 text-white p-4 shadow-md">
-        <nav className="container mx-auto flex justify-between items-center">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <nav className="container h-16 flex items-center justify-between">
+          {" "}
+          {/* Fixed height for navbar */}
           <Link
-            href="/dashboard"
-            className="text-xl font-semibold hover:text-gray-300"
+            href="/"
+            className="flex items-center space-x-2 text-lg font-semibold text-primary hover:opacity-80 transition-opacity"
           >
-            FocusFlare Platform
+            <Sparkles className="h-6 w-6" /> {/* Example Logo */}
+            <span>FocusFlare</span>
           </Link>
           <div className="flex items-center space-x-4">
-            {session?.user ? (
-              <>
-                <span className="text-sm">
-                  {session.user.name ||
-                    session.user.email ||
-                    session.user.username}
-                </span>
-                <SignOutButton />
-              </>
-            ) : (
-              <Link href="/auth/signin" className="hover:text-gray-300">
-                Sign In
-              </Link>
-            )}
+            {/* Add other nav links here if needed later */}
+            <UserNav /> {/* Replace old user display/signout with UserNav */}
           </div>
         </nav>
       </header>
-      <main className="flex-grow container mx-auto p-4 md:p-6">{children}</main>
-      <footer className="bg-gray-100 dark:bg-gray-800 text-center p-4 text-sm text-gray-600 dark:text-gray-400">
-        © {new Date().getFullYear()} FocusFlare. All rights reserved.
+      <main className="flex-grow">
+        {" "}
+        {/* Removed container and padding, let child layouts/pages handle it */}
+        {children}
+      </main>
+      {/* Footer can be optional for dashboard views or simpler */}
+      <footer className="border-t text-center p-4 text-xs text-muted-foreground">
+        © {new Date().getFullYear()} FocusFlare. Your Learning Journey,
+        Enhanced.
       </footer>
       <Toaster richColors position="top-right" />
     </div>
