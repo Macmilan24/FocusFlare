@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
   ArrowLeft,
-  CheckCircle2,
-  Circle,
   BookOpen,
   HelpCircle,
-  Percent,
   Star,
+  BarChart2,
+  CalendarDays,
+  TrendingUp,
+  CheckCircle,
+  Percent,
 } from "lucide-react";
 import {
   Card,
@@ -18,200 +20,254 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { getChildProgressDetails } from "@/actions/progress.actions";
+import { Progress } from "@/components/ui/progress"; // shadcn/ui progress
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  getChildProgressDetailsForReport,
+  DetailedChildReport,
+} from "@/actions/progress.actions"; // Updated import
+import { formatDistanceToNow } from "date-fns";
 import { ContentType } from "@prisma/client";
+import { ActivityBarChart } from "@/components/charts/activity-bar-chart";
+import { ChildActivityTable } from "@/components/parent/child-activity-table";
 
-interface ChildDetailPageProps {
+interface ChildProgressReportPageProps {
   params: {
     childId: string;
   };
 }
 
-export default async function ChildDetailPage({
+export default async function ChildProgressReportPage({
   params,
-}: ChildDetailPageProps) {
+}: ChildProgressReportPageProps) {
   const session = await auth();
   if (!session?.user || session.user.role !== "PARENT") {
     redirect("/auth/signin");
   }
 
   const { childId } = params;
-  const { data: fullProgressDetails, error } = await getChildProgressDetails(
+  const { data: report, error } = await getChildProgressDetailsForReport(
     childId
   );
 
-  if (error || !fullProgressDetails) {
+  if (error || !report) {
     return (
-      <div className="p-4 md:p-8 text-center">
+      <div className="p-6 md:p-8 text-center">
         <Button
           asChild
           variant="outline"
           size="sm"
           className="mb-4 mr-auto block w-fit"
         >
-          <Link href="/parent/home">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Parent Dashboard
+          <Link href="/parent/children">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to My Children
           </Link>
         </Button>
         <h1 className="text-2xl font-bold text-red-500 mt-4">
-          Error Loading Progress
+          Error Loading Report
         </h1>
-        <p>{error || "Could not load details for this child."}</p>
+        <p>{error || "Could not load progress report for this child."}</p>
       </div>
     );
   }
 
-  const { child, progressItems } = fullProgressDetails;
-  const childName = child.name || child.username || "Child";
-
-  const storiesProgress = progressItems.filter(
-    (item) => item.contentType === ContentType.STORY
-  );
-  const quizzesProgress = progressItems.filter(
-    (item) => item.contentType === ContentType.QUIZ
-  );
+  const {
+    child,
+    overallStats,
+    progressBySubject,
+    activityFeed,
+    activityCalendar,
+  } = report;
+  const childDisplayName = child.name || child.username || "Child";
 
   return (
-    <div className="space-y-8 p-4 md:p-6">
-      <div>
-        <Button asChild variant="outline" size="sm" className="mb-6">
-          <Link href="/parent/home">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Parent Dashboard
-          </Link>
-        </Button>
-        <h1 className="text-3xl font-bold">Progress Report for {childName}</h1>
-        <p className="text-muted-foreground">@{child.username}</p>
+    <div className="space-y-8 p-1 md:p-2 lg:p-4">
+      {" "}
+      {/* Reduced overall padding slightly */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="mb-2 text-muted-foreground hover:text-primary -ml-2"
+          >
+            <Link href="/parent/children">
+              <ArrowLeft className="mr-2 h-4 w-4" /> My Children
+            </Link>
+          </Button>
+          <div className="flex items-center gap-4">
+            <Avatar className="h-16 w-16 border-2 border-primary">
+              <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                {(child.name || child.username || "C")
+                  .substring(0, 1)
+                  .toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">
+                {childDisplayName}&apos;s Progress
+              </h1>
+              <p className="text-muted-foreground">@{child.username}</p>
+            </div>
+          </div>
+        </div>
+        {/* Future: Buttons for "Edit Child", "Set Goals" */}
       </div>
+      {/* Overall Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Activities Completed
+            </CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {overallStats.totalActivitiesCompleted}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Total across platform
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Stories Finished
+            </CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {overallStats.totalStoriesCompleted}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Quizzes Passed
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {overallStats.totalQuizzesPassed}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Avg. Quiz Score
+            </CardTitle>
+            <Percent className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {overallStats.averageQuizScoreAllTime !== null
+                ? `${overallStats.averageQuizScoreAllTime}%`
+                : "N/A"}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      {/* Main Content Grid (Progress by Subject, Activity Calendar) */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-xl">Progress by Subject</CardTitle>
+            <CardDescription>
+              Completion and performance in different learning areas.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {progressBySubject.length === 0 && (
+              <p className="text-muted-foreground">No subject progress yet.</p>
+            )}
+            {progressBySubject.map(
+              (
+                subjectItem // Renamed 'subject' to 'subjectItem' to avoid conflict with subjectName
+              ) => (
+                <div key={subjectItem.subject}>
+                  <div className="flex justify-between items-baseline mb-1">
+                    <h4 className="text-md font-semibold">
+                      {subjectItem.subject}
+                    </h4>
+                    <span className="text-sm text-muted-foreground">
+                      {subjectItem.totalCompleted} /{" "}
+                      {subjectItem.totalAvailable} done
+                    </span>
+                  </div>
+                  <Progress
+                    value={
+                      (subjectItem.totalCompleted /
+                        Math.max(subjectItem.totalAvailable, 1)) *
+                      100
+                    }
+                    className="h-3"
+                  />
+                  {/* Check if averageScore exists and is not null to display it */}
+                  {subjectItem.averageScore !== null && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Avg. Quiz Score: {subjectItem.averageScore}%
+                    </p>
+                  )}
+                </div>
+              )
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Story Completions Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl flex items-center">
+              <CalendarDays className="mr-2 h-5 w-5 text-primary" /> Activity
+              Calendar
+            </CardTitle>
+            <CardDescription>
+              Daily activity count (last 30 days).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pl-0 pr-2 sm:pr-4">
+            {" "}
+            {/* Adjust padding for chart */}
+            {activityCalendar && activityCalendar.length > 0 ? (
+              <ActivityBarChart data={activityCalendar} />
+            ) : (
+              <div className="h-[250px] w-full flex items-center justify-center text-muted-foreground">
+                No recent activity to display.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      {/* Detailed Activity Log (Table) */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl flex items-center">
-            <BookOpen className="mr-3 h-6 w-6 text-blue-500" />
-            Story Progress
-          </CardTitle>
+          <CardTitle className="text-xl">Detailed Activity Log</CardTitle>
           <CardDescription>
-            Overview of stories your child has engaged with.
+            A chronological feed of all activities. Click headers to sort.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {storiesProgress.length === 0 ? (
-            <p className="text-muted-foreground">
-              No story progress recorded yet.
-            </p>
+          {activityFeed.length === 0 ? (
+            <p className="text-muted-foreground">No activities logged yet.</p>
           ) : (
-            <ul className="space-y-3">
-              {storiesProgress.map((item) => (
-                <li
-                  key={item.contentId}
-                  className={`flex items-center justify-between p-4 border rounded-lg shadow-sm transition-all
-                                                  ${
-                                                    item.status === "completed"
-                                                      ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700"
-                                                      : "bg-slate-50 dark:bg-slate-800"
-                                                  }`}
-                >
-                  <p className="font-medium">{item.contentTitle}</p>
-                  <div className="flex flex-col items-end text-xs">
-                    {item.status === "completed" ? (
-                      <span className="flex items-center font-semibold text-green-600">
-                        <CheckCircle2 className="mr-1 h-4 w-4" /> Completed
-                      </span>
-                    ) : (
-                      <span className="flex items-center text-muted-foreground">
-                        <Circle className="mr-1 h-4 w-4" />{" "}
-                        {item.status || "Not Started"}
-                      </span>
-                    )}
-                    {item.completedAt && item.status === "completed" && (
-                      <span className="text-muted-foreground">
-                        on {new Date(item.completedAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <ChildActivityTable data={activityFeed} />
           )}
         </CardContent>
       </Card>
-
-      {/* Quiz Performance Card */}
+      {/* Placeholder for Badges */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl flex items-center">
-            <HelpCircle className="mr-3 h-6 w-6 text-purple-500" />
-            Quiz Performance
-          </CardTitle>
-          <CardDescription>Scores and attempts for quizzes.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {quizzesProgress.length === 0 ? (
-            <p className="text-muted-foreground">
-              No quiz attempts recorded yet.
-            </p>
-          ) : (
-            <ul className="space-y-3">
-              {quizzesProgress.map((item) => (
-                <li
-                  key={item.contentId}
-                  className={`flex items-center justify-between p-4 border rounded-lg shadow-sm transition-all
-                                                  ${
-                                                    item.status === "passed"
-                                                      ? "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700"
-                                                      : item.status === "failed"
-                                                      ? "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700"
-                                                      : "bg-slate-50 dark:bg-slate-800"
-                                                  }`}
-                >
-                  <p className="font-medium">{item.contentTitle}</p>
-                  <div className="flex flex-col items-end text-xs">
-                    {item.score !== null && item.score !== undefined && (
-                      <span
-                        className={`flex items-center font-semibold ${
-                          item.status === "passed"
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        <Percent className="mr-1 h-4 w-4" /> {item.score}%
-                      </span>
-                    )}
-                    <span
-                      className={`font-medium capitalize ${
-                        item.status === "passed"
-                          ? "text-green-600"
-                          : item.status === "failed"
-                          ? "text-red-600"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {item.status}
-                    </span>
-                    {item.completedAt && (
-                      <span className="text-muted-foreground">
-                        on {new Date(item.completedAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Placeholder for Badges Earned Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl flex items-center">
-            <Star className="mr-3 h-6 w-6 text-yellow-500" />
-            Badges Earned
-          </CardTitle>
+          <CardTitle className="text-xl">Badges Earned</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            Collected badges will appear here soon.
+            Badges will appear here as your child earns them!
           </p>
         </CardContent>
       </Card>

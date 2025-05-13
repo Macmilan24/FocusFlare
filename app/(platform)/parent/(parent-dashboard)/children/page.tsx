@@ -98,7 +98,7 @@ export default function MyChildrenPage() {
           {/* Responsive grid */}
           {childrenData.map((child) => (
             <Link
-              href={`/parent/child/${child.id}/progress`}
+              href={`/parent/children/${child.id}/progress`}
               key={child.id}
               className="group block"
             >
