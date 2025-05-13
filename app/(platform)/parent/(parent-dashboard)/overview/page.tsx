@@ -24,7 +24,15 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // For child av
 
 export default async function ParentOverviewPage() {
   const session = await auth();
+  console.log(
+    "[ParentOverviewPage] Session from auth():",
+    JSON.stringify(session)
+  );
   if (!session?.user || session.user.role !== "PARENT") {
+    console.log(
+      "[ParentOverviewPage] Redirecting to signin. Session was:",
+      JSON.stringify(session)
+    );
     redirect("/auth/signin");
   }
 

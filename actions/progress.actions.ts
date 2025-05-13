@@ -3,6 +3,10 @@
 import prisma from "@/lib/db/prisma";
 import { auth } from "@/lib/auth";
 import { Role, ContentType } from "@prisma/client";
+import {
+  getEarnedBadgesForUser,
+  EarnedBadge as GamificationEarnedBadge,
+} from "./gamification.actions";
 
 // Interface for individual progress items (can be a story or quiz)
 export interface ProgressItemSummary {
@@ -55,8 +59,8 @@ export interface DetailedChildReport {
   };
   progressBySubject: SubjectProgress[];
   activityFeed: ProgressItemSummary[]; // The existing detailed feed, maybe limit to more items
-  activityCalendar?: ActivityOverTimePoint[]; // For a calendar heatmap or line chart
-  // skillBreakdown?: any; // For radar chart later
+  activityCalendar?: ActivityOverTimePoint[];
+  earnedBadges: GamificationEarnedBadge[];
 }
 
 export async function getChildProgressDetails(
@@ -182,6 +186,7 @@ export async function getChildProgressDetailsForReport(
     const allLearningContent = await prisma.learningContent.findMany({
       select: { id: true, subject: true, contentType: true },
     });
+    const { badges: childEarnedBadges } = await getEarnedBadgesForUser(childId);
 
     // Fetch all progress for this child
     const childProgressRecords = await prisma.userLearningProgress.findMany({
@@ -320,6 +325,7 @@ export async function getChildProgressDetailsForReport(
       progressBySubject,
       activityFeed,
       activityCalendar,
+      earnedBadges: childEarnedBadges || [],
     };
     return { data };
   } catch (error) {

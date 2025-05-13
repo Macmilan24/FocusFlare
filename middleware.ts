@@ -8,8 +8,8 @@ export async function middleware(req: NextRequest) {
 
   const token = await getToken({ req, secret });
 
-  // console.log("[MIDDLEWARE] Pathname:", req.nextUrl.pathname);
-  // console.log("[MIDDLEWARE] Decoded Token:", token);
+  console.log("[MIDDLEWARE] Pathname:", req.nextUrl.pathname);
+  console.log("[MIDDLEWARE] Decoded Token:", token);
 
   const isLoggedIn = !!token;
   const { pathname } = req.nextUrl;
@@ -39,7 +39,10 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/parent") || pathname.startsWith("/kid");
 
   if (isPlatformRoute && !isLoggedIn) {
-    // console.log("[MIDDLEWARE] User not logged in, redirecting to signin from protected route:", pathname);
+    console.log(
+      "[MIDDLEWARE] User not logged in, redirecting to signin from protected route:",
+      pathname
+    );
     const signInUrl = new URL("/auth/signin", req.url);
     signInUrl.searchParams.set("callbackUrl", req.url);
     return NextResponse.redirect(signInUrl);

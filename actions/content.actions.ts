@@ -2,7 +2,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import prisma from "@/lib/db/prisma";
 import { auth } from "@/lib/auth";
-import { ContentType, Role } from "@prisma/client";
+import { checkAndAwardStoryBadges } from "./gamification.actions";
+import { ContentType, Role, Badge } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 export interface StoryListItem {
@@ -23,7 +24,8 @@ export interface MarkCompletionResult {
   success?: boolean;
   message?: string;
   error?: string;
-  newPointsTotal?: number; // Added to match the returned object
+  newPointsTotal?: number;
+  awardedBadge?: Badge | null;
 }
 export interface StoryPageData {
   text: string;
@@ -270,12 +272,15 @@ export async function markStoryAsCompleted(
       return { newPointsTotal: finalPoints };
     });
 
+    const awardedBadge = await checkAndAwardStoryBadges(userId);
+
     revalidatePath("/kid/home");
 
     return {
       success: true,
       message: `Story complete! +${POINTS_FOR_STORY} points! Your new total: ${resultInTransaction.newPointsTotal}.`,
       newPointsTotal: resultInTransaction.newPointsTotal,
+      awardedBadge,
     };
   } catch (error) {
     console.error(

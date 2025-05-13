@@ -73,6 +73,7 @@ model User {
   parentLink       ParentChildLink[]      @relation("Parent")
   childLink        ParentChildLink[]      @relation("Child")
   learningProgress UserLearningProgress[]
+  UserBadge        UserBadge[]
 }
 
 model ParentChildLink {
@@ -108,14 +109,15 @@ model LearningContent {
 }
 
 model UserLearningProgress {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String @db.ObjectId
-  contentId String @db.ObjectId
-  status    String
-  score     Int?
-  progress  Int?
-  answers   Json?
-  details   Json?
+  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String      @db.ObjectId
+  contentId  String      @db.ObjectId
+  status     String
+  score      Int?
+  progress   Int?
+  answers    Json?
+  details    Json?
+  userBadges UserBadge[]
 
   completedAt  DateTime?
   startedAt    DateTime        @default(now())
@@ -126,4 +128,31 @@ model UserLearningProgress {
   @@unique([userId, contentId])
   @@index([userId])
   @@index([contentId])
+}
+
+model Badge {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  name         String   @unique
+  description  String
+  iconSlug     String
+  criteriaText String? // User-facing text like "Complete your first story!"
+  createdAt    DateTime @default(now())
+
+  userBadges UserBadge[] // Relation to users who earned this badge
+}
+
+model UserBadge {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String   @db.ObjectId
+  badgeId  String   @db.ObjectId
+  earnedAt DateTime @default(now())
+
+  user                   User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge                  Badge                 @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  UserLearningProgress   UserLearningProgress? @relation(fields: [userLearningProgressId], references: [id])
+  userLearningProgressId String?               @db.ObjectId
+
+  @@unique([userId, badgeId]) // A user can earn each badge only once
+  @@index([userId])
+  @@index([badgeId])
 }

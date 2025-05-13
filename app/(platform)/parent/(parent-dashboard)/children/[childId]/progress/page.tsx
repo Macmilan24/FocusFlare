@@ -5,13 +5,11 @@ import Link from "next/link";
 import {
   ArrowLeft,
   BookOpen,
-  HelpCircle,
-  Star,
-  BarChart2,
   CalendarDays,
   TrendingUp,
   CheckCircle,
   Percent,
+  Award,
 } from "lucide-react";
 import {
   Card,
@@ -21,15 +19,20 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress"; // shadcn/ui progress
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   getChildProgressDetailsForReport,
   DetailedChildReport,
-} from "@/actions/progress.actions"; // Updated import
-import { formatDistanceToNow } from "date-fns";
-import { ContentType } from "@prisma/client";
+} from "@/actions/progress.actions";
 import { ActivityBarChart } from "@/components/charts/activity-bar-chart";
 import { ChildActivityTable } from "@/components/parent/child-activity-table";
+import { EarnedBadge } from "@/actions/gamification.actions";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface ChildProgressReportPageProps {
   params: {
@@ -46,9 +49,10 @@ export default async function ChildProgressReportPage({
   }
 
   const { childId } = params;
-  const { data: report, error } = await getChildProgressDetailsForReport(
-    childId
-  );
+  const result: { data?: DetailedChildReport; error?: string } =
+    await getChildProgressDetailsForReport(childId);
+  const report = result.data;
+  const error = result.error;
 
   if (error || !report) {
     return (
@@ -77,6 +81,7 @@ export default async function ChildProgressReportPage({
     progressBySubject,
     activityFeed,
     activityCalendar,
+    earnedBadges,
   } = report;
   const childDisplayName = child.name || child.username || "Child";
 
@@ -263,12 +268,52 @@ export default async function ChildProgressReportPage({
       {/* Placeholder for Badges */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">Badges Earned</CardTitle>
+          <CardTitle className="text-xl flex items-center">
+            <Award className="mr-3 h-6 w-6 text-yellow-500" />
+            Badges Earned
+          </CardTitle>
+          <CardDescription>
+            Recognitions for your child&apos;s achievements!
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">
-            Badges will appear here as your child earns them!
-          </p>
+          {!earnedBadges || earnedBadges.length === 0 ? (
+            <p className="text-muted-foreground">
+              No badges earned yet. Keep exploring!
+            </p>
+          ) : (
+            <TooltipProvider delayDuration={100}>
+              <div className="flex flex-wrap gap-4">
+                {/* Explicitly type 'badge' in the map function */}
+                {earnedBadges.map((badge: EarnedBadge) => (
+                  <Tooltip key={badge.id}>
+                    <TooltipTrigger asChild>
+                      <div className="flex flex-col items-center p-3 border border-amber-400 dark:border-amber-600 rounded-lg bg-white dark:bg-slate-700 shadow-sm w-24 h-28 hover:scale-105 transition-transform">
+                        <Award className="h-10 w-10 text-yellow-500 dark:text-yellow-400 mb-1" />
+                        <p className="text-xs font-medium text-center truncate w-full">
+                          {badge.name}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {new Date(badge.earnedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">
+                      <p className="font-semibold">{badge.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {badge.description}
+                      </p>
+                      {badge.criteriaText && (
+                        <p className="text-xs italic mt-1">
+                          Criteria: {badge.criteriaText}
+                        </p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            </TooltipProvider>
+          )}
         </CardContent>
       </Card>
     </div>

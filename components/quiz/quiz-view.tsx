@@ -1,5 +1,9 @@
 "use client";
 import { useState, useEffect, useTransition, useCallback } from "react";
+import {
+  refreshClientSession,
+  SessionUpdateData,
+} from "@/actions/auth.actions";
 import { QuizData, QuizQuestion, QuizOption } from "@/actions/content.actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -81,23 +85,36 @@ export default function QuizView({ quiz }: QuizViewProps) {
 
   const performSubmitQuiz = useCallback(() => {
     startSubmitTransition(async () => {
-      toast.info("Calculating your score...", {
+      toast.info("Submitting your answers...", {
         id: "submitting-toast",
         duration: 10000,
       });
       const serverResult = await submitQuizAnswers(quiz.id, selectedAnswers);
+
       if (serverResult.error || !serverResult.data) {
         toast.error(
           serverResult.error || "Failed to submit quiz. Please try again.",
-          { id: "submitting-toast", duration: 5000 }
+          {
+            id: "submitting-toast",
+            duration: 5000,
+          }
         );
         setSubmissionResult(null);
       } else {
         setSubmissionResult(serverResult.data);
-        toast.success(serverResult.data.message || "Quiz results are in!", {
+        // Updated toast message to include points earned
+        const toastMessage =
+          serverResult.data.message || "Quiz results are in!";
+        toast.success(toastMessage, {
           id: "submitting-toast",
-          duration: 4000,
+          duration: 5000, // Longer duration to read points
+          icon: serverResult.data.passed ? (
+            <Award className="text-yellow-500" />
+          ) : (
+            <ThumbsUp className="text-green-500" />
+          ),
         });
+
         if (serverResult.data.passed) {
           const confettiDefaults = {
             spread: 120,
@@ -133,6 +150,22 @@ export default function QuizView({ quiz }: QuizViewProps) {
           setTimeout(shootConfetti, 150);
           setTimeout(shootConfetti, 300);
         }
+        if (serverResult.data.awardedBadge) {
+          toast.success(
+            `🎉 Badge Unlocked: ${serverResult.data.awardedBadge.name}!`,
+            {
+              description: serverResult.data.awardedBadge.description,
+              icon: <Award className="h-5 w-5 text-yellow-500" />,
+              duration: 5000,
+            }
+          );
+        }
+        if (serverResult.data.newTotalPoints !== undefined) {
+          await refreshClientSession({
+            points: serverResult.data.newTotalPoints,
+          });
+        }
+
         setQuizFinished(true);
       }
     });
