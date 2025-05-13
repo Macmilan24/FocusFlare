@@ -92,6 +92,7 @@ enum ContentType {
   QUIZ
   LESSON
   GAME
+  COURSE
 }
 
 model LearningContent {

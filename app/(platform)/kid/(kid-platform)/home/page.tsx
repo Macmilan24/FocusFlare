@@ -1,3 +1,4 @@
+// app/(platform)/kid/(kid-platform)/home/page.tsx
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import {
@@ -9,34 +10,16 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import Image from "next/image";
-import {
-  Gem,
-  Award,
-  BookHeart,
-  Brain,
-  Palette,
-  Sparkles,
-  BookOpen,
-  Target,
-  Puzzle,
-  Edit3,
-  HelpCircle,
-} from "lucide-react";
+import Image from "next/image"; // Keep for content cards
+import { Gem, Award, Edit3, Sparkles as SparkleIcon } from "lucide-react"; // Main icons for this page
+import * as LucideIcons from "lucide-react"; // For dynamic subject icons
 import {
   getRecommendedContent,
   getContinueLearningContent,
   getSubjectCategories,
-  ContentCardItem,
-  SubjectCategory,
-} from "@/actions/kid.actions"; // Ensure correct path
-import {
-  getEarnedBadgesForUser,
-  EarnedBadge,
-} from "@/actions/gamification.actions";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+  ContentCardItem, // Ensure this includes coverImageUrl at top level
+} from "@/actions/kid.actions";
+import { getEarnedBadgesForUser } from "@/actions/gamification.actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Tooltip,
@@ -44,120 +27,84 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ContentType } from "@prisma/client";
+import { Progress } from "@/components/ui/progress"; // For continue learning cards
+import { Badge } from "@/components/ui/badge"; // For content type tags on cards
+import { ContentType } from "@prisma/client"; // For ContentDisplayCard
 
-interface SubjectCardProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  href: string;
-  colorClass: string;
-}
-
-const subjects: SubjectCardProps[] = [
-  {
-    title: "Math Adventures",
-    description: "Explore numbers, shapes, and fun puzzles!",
-    icon: <Sparkles className="h-8 w-8" />,
-    href: "/kid/math",
-    colorClass:
-      "bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700",
-  },
-  {
-    title: "Story Time",
-    description: "Dive into exciting stories and adventures.",
-    icon: <BookOpen className="h-8 w-8" />,
-    href: "/kid/stories",
-    colorClass:
-      "bg-green-100 dark:bg-green-900 border-green-300 dark:border-green-700",
-  },
-  {
-    title: "Focus Games",
-    description: "Sharpen your attention with engaging games.",
-    icon: <Target className="h-8 w-8" />,
-    href: "/kid/focus",
-    colorClass:
-      "bg-yellow-100 dark:bg-yellow-900 border-yellow-300 dark:border-yellow-700",
-  },
-  {
-    title: "Creative Corner",
-    description: "Draw, color, and express your imagination!",
-    icon: <Palette className="h-8 w-8" />,
-    href: "/kid/creative",
-    colorClass:
-      "bg-purple-100 dark:bg-purple-900 border-purple-300 dark:border-purple-700",
-  },
-  {
-    title: "Quiz Zone",
-    description: "Test your knowledge with fun quizzes!",
-    icon: <Puzzle className="h-8 w-8" />, // Example icon
-    href: "/kid/quizzes", // Link to the new quiz list page
-    colorClass:
-      "bg-indigo-100 dark:bg-indigo-900 border-indigo-300 dark:border-indigo-700",
-  },
-];
-
+// Reusable Content Display Card (ensure this is styled with kid-theme variables)
 function ContentDisplayCard({ item }: { item: ContentCardItem }) {
   let linkHref = "#";
-  if (item.contentType === ContentType.STORY)
+  let IconType: LucideIcons.LucideIcon | null = null;
+
+  if (item.contentType === ContentType.STORY) {
     linkHref = `/kid/stories/${item.id}`;
-  else if (item.contentType === ContentType.QUIZ)
+    IconType = LucideIcons.BookHeart;
+  } else if (item.contentType === ContentType.QUIZ) {
     linkHref = `/kid/quizzes/${item.id}`;
-  // Add links for LESSON, COURSE later
+    IconType = LucideIcons.Brain;
+  } else if (item.contentType === ContentType.LESSON) {
+    // Assuming LESSON type
+    // linkHref = `/kid/lessons/${item.id}`;
+    IconType = LucideIcons.ClipboardList;
+  } else if (item.contentType === ContentType.COURSE) {
+    // Assuming COURSE type
+    // linkHref = `/kid/courses/${item.id}`;
+    IconType = LucideIcons.LibraryBig;
+  }
 
   return (
     <Link href={linkHref} passHref className="block group">
-      <Card className="h-full overflow-hidden shadow-lg hover:shadow-xl dark:hover:shadow-primary/30 transition-all duration-300 ease-in-out transform hover:-translate-y-1 border-2 border-transparent hover:border-primary/50 rounded-xl">
-        <div className="relative w-full h-40">
+      <Card className="h-full flex flex-col overflow-hidden shadow-lg hover:shadow-xl dark:hover:shadow-[hsl(var(--primary-kid))]/30 transition-all duration-300 ease-in-out transform hover:-translate-y-1.5 border-2 border-transparent hover:border-[hsl(var(--primary-kid))]/50 rounded-2xl bg-[hsl(var(--card-kid))] text-[hsl(var(--card-foreground-kid))]">
+        <div className="relative w-full h-36 sm:h-40">
+          {" "}
+          {/* Adjusted height for content cards */}
           {item.coverImageUrl ? (
             <Image
               src={item.coverImageUrl}
               alt={item.title}
               layout="fill"
               objectFit="cover"
-              className="group-hover:scale-105 transition-transform duration-300"
+              className="group-hover:scale-105 transition-transform duration-300 rounded-t-xl"
             />
           ) : (
-            <div className="w-full h-full bg-muted flex items-center justify-center">
-              {item.contentType === ContentType.STORY && (
-                <BookHeart className="h-12 w-12 text-muted-foreground/50" />
+            <div className="w-full h-full bg-[hsl(var(--muted-kid))] flex items-center justify-center rounded-t-xl">
+              {IconType ? (
+                <IconType className="h-12 w-12 text-[hsl(var(--muted-kid-foreground))]/50" />
+              ) : (
+                <SparkleIcon className="h-12 w-12 text-[hsl(var(--muted-kid-foreground))]/50" />
               )}
-              {item.contentType === ContentType.QUIZ && (
-                <Brain className="h-12 w-12 text-muted-foreground/50" />
-              )}
-              {/* Add icons for other content types */}
             </div>
           )}
-          {/* Optional: Tag for content type */}
           <Badge
             variant="secondary"
-            className="absolute top-2 right-2 shadow capitalize bg-opacity-80 backdrop-blur-sm"
+            className="absolute top-2 right-2 shadow capitalize bg-[hsl(var(--accent-kid))]/80 text-[hsl(var(--accent-kid-foreground))] text-xs px-2 py-0.5 backdrop-blur-sm"
           >
-            {item.contentType.toLowerCase()}
+            {item.contentType.toLowerCase().replace("_", " ")}
           </Badge>
         </div>
-        <CardHeader className="pb-2 pt-4 px-4">
+        <CardHeader className="pb-2 pt-3 px-3 sm:px-4">
           {item.courseTitle && (
-            <p className="text-xs text-primary font-semibold mb-0.5">
+            <p className="text-xs text-[hsl(var(--primary-kid))] font-semibold mb-0.5 line-clamp-1">
               {item.courseTitle}
             </p>
           )}
-          <CardTitle className="text-md lg:text-lg font-bold leading-tight group-hover:text-primary transition-colors">
+          <CardTitle className="text-sm sm:text-md font-bold leading-tight group-hover:text-[hsl(var(--primary-kid))] transition-colors line-clamp-2">
             {item.title}
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-4 pb-4">
+        <CardContent className="px-3 sm:px-4 pb-3 flex-grow">
           {item.description && (
-            <p className="text-xs lg:text-sm text-muted-foreground line-clamp-2">
+            <p className="text-xs sm:text-sm text-[hsl(var(--muted-kid-foreground))] line-clamp-2 sm:line-clamp-3">
               {item.description}
             </p>
           )}
           {item.progressPercentage !== undefined && (
             <div className="mt-2">
-              <Progress value={item.progressPercentage} className="h-1.5" />
-              <p className="text-xs text-muted-foreground mt-1">
-                {item.progressPercentage}% completed
-              </p>
+              <Progress
+                value={item.progressPercentage}
+                className="h-1.5 bg-[hsl(var(--primary-kid))]/20 [&>div]:bg-[hsl(var(--primary-kid))]"
+              />
+              {/* <p className="text-xs text-muted-foreground mt-1">{item.progressPercentage}% completed</p> */}
             </div>
           )}
         </CardContent>
@@ -169,17 +116,22 @@ function ContentDisplayCard({ item }: { item: ContentCardItem }) {
 export default async function KidHomePage() {
   const session = await auth();
   if (!session?.user) redirect("/auth/signin");
-  if (session.user.role !== "CHILD") redirect("/parent/overview"); // Or a generic app page
+  if (session.user.role !== "CHILD") redirect("/parent/overview");
 
-  const [recommended, continueLearning, subjects, { badges: earnedBadges }] =
-    await Promise.all([
-      getRecommendedContent(4),
-      getContinueLearningContent(3), // Maybe fewer for continue learning
-      getSubjectCategories(),
-      getEarnedBadgesForUser(session.user.id), // Fetch earned badges
-    ]);
+  const [
+    recommended,
+    continueLearning,
+    subjects,
+    { badges: earnedBadgesData },
+  ] = await Promise.all([
+    getRecommendedContent(4),
+    getContinueLearningContent(3),
+    getSubjectCategories(),
+    getEarnedBadgesForUser(session.user.id),
+  ]);
   const userPoints = session.user.points || 0;
-  const childUser = session.user; // For easier access
+  const childUser = session.user;
+  const earnedBadges = earnedBadgesData || []; // Ensure earnedBadges is an array
 
   const initials = (
     childUser.username?.substring(0, 1) ||
@@ -188,117 +140,124 @@ export default async function KidHomePage() {
   ).toUpperCase();
 
   return (
-    <div className="p-2 sm:p-4 space-y-8 md:space-y-10">
-      {/* Hero Welcome Section */}
-      <section className="flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6 p-4 bg-card dark:bg-slate-800/50 rounded-xl shadow">
+    <div className="kid-theme-content p-3 sm:p-4 md:p-6 space-y-10 md:space-y-12">
+      {" "}
+      {/* Added kid-theme-content for specific page styling */}
+      {/* Top Profile / Stats Snippet */}
+      <section className="flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6 p-4 bg-[hsl(var(--card-kid))] rounded-2xl shadow-lg border border-[hsl(var(--border-kid))]">
         <div className="flex items-center gap-3 sm:gap-4">
-          <Avatar className="h-16 w-16 sm:h-20 sm:w-20 border-2 border-purple-300 dark:border-purple-600">
+          <Avatar className="h-14 w-14 sm:h-16 sm:w-16 border-2 border-[hsl(var(--primary-kid))]">
             <AvatarImage src={childUser.image || undefined} />
-            <AvatarFallback className="text-2xl sm:text-3xl bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-300">
+            <AvatarFallback className="text-xl sm:text-2xl bg-[hsl(var(--primary-kid))]/20 text-[hsl(var(--primary-kid))] font-semibold">
               {initials}
             </AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-100">
-              {childUser.username || childUser.name || "Welcome, Explorer!"}
+            <h1 className="text-lg sm:text-xl font-bold text-[hsl(var(--foreground-kid))]">
+              {childUser.username || childUser.name || "Hey Explorer!"}
             </h1>
             <Link
               href="/kid/profile/edit"
-              className="text-xs text-primary hover:underline flex items-center"
+              className="text-xs text-[hsl(var(--primary-kid))] hover:underline flex items-center opacity-80 hover:opacity-100 transition-opacity"
             >
-              <Edit3 className="h-3 w-3 mr-1" /> Edit Profile{" "}
-              {/* Link to future profile edit page */}
+              <Edit3 className="h-3 w-3 mr-1" /> My Profile
             </Link>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 sm:gap-6 text-sm text-muted-foreground">
-          {/* Streaks - Placeholder for now */}
-          {/* <div className="flex items-center gap-1">
-            <Zap className="h-5 w-5 text-orange-500"/>
-            <span><span className="font-bold text-slate-700 dark:text-slate-200">0</span> week streak</span>
-          </div>
-          <Separator orientation="vertical" className="h-6 hidden sm:block"/> */}
-          <div className="flex items-center gap-1.5 p-2 px-3 rounded-lg bg-amber-100 dark:bg-amber-800/50 border border-amber-300 dark:border-amber-600">
-            <Gem className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-            <span className="font-bold text-lg text-amber-700 dark:text-amber-300">
+        <div className="flex items-center gap-3 sm:gap-4 text-sm">
+          <div className="flex items-center gap-1.5 p-2 px-3 rounded-lg bg-[hsl(var(--accent-kid))]/20 border border-[hsl(var(--accent-kid))]/50">
+            <Gem className="h-5 w-5 text-[hsl(var(--accent-kid))]" />
+            <span className="font-bold text-lg text-[hsl(var(--accent-kid))]">
               {userPoints}
             </span>
-            <span className="text-xs">Points</span>
+            <span className="text-xs text-[hsl(var(--accent-kid-foreground))] opacity-80">
+              Points
+            </span>
           </div>
-          {/* Badges quick display */}
           {earnedBadges && earnedBadges.length > 0 && (
             <TooltipProvider>
+              {" "}
               <Tooltip>
+                {" "}
                 <TooltipTrigger asChild>
                   <Link
                     href="/kid/badges"
-                    className="flex items-center gap-1.5 p-2 px-3 rounded-lg bg-pink-100 dark:bg-pink-800/50 border border-pink-300 dark:border-pink-600"
+                    className="flex items-center gap-1.5 p-2 px-3 rounded-lg bg-[hsl(var(--secondary-kid))]/20 border border-[hsl(var(--secondary-kid))]/50"
                   >
-                    <Award className="h-5 w-5 text-pink-600 dark:text-pink-400" />
-                    <span className="font-bold text-lg text-pink-700 dark:text-pink-300">
+                    <Award className="h-5 w-5 text-[hsl(var(--secondary-kid))]" />
+                    <span className="font-bold text-lg text-[hsl(var(--secondary-kid))]">
                       {earnedBadges.length}
                     </span>
-                    <span className="text-xs">Badges</span>
+                    <span className="text-xs text-[hsl(var(--secondary-kid-foreground))] opacity-80">
+                      Badges
+                    </span>
                   </Link>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>View all your awesome badges!</p>
+                  <p>View your badges!</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           )}
         </div>
       </section>
-
+      {/* Optional: A more prominent "What's Next?" or Call to Action Banner */}
+      {/* <section className="p-6 md:p-8 bg-gradient-to-r from-[hsl(var(--primary-kid))] to-[hsl(var(--secondary-kid))] rounded-2xl shadow-xl text-center">
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Ready for Your Next Adventure?</h2>
+        <p className="text-white/80 mb-6 max-w-lg mx-auto">Pick a subject below or see what we've recommended just for you!</p>
+        <Button size="lg" variant="secondary" className="bg-white text-[hsl(var(--primary-kid))] hover:bg-slate-100 shadow-md text-md px-8 py-3">
+            Explore All Activities
+        </Button>
+      </section> */}
       {/* Continue Learning Section */}
-      {continueLearning.length > 0 && (
+      {continueLearning && continueLearning.length > 0 && (
         <section>
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-slate-800 dark:text-slate-100">
-            Keep Going...
+          <h2 className="text-xl md:text-2xl font-bold mb-4 text-[hsl(var(--foreground-kid))]">
+            Keep Going... <span className="text-lg">🚀</span>
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 sm:gap-x-6 gap-y-6">
             {continueLearning.map((item) => (
               <ContentDisplayCard key={`continue-${item.id}`} item={item} />
             ))}
           </div>
         </section>
       )}
-
       {/* Recommended For You Section */}
-      {recommended.length > 0 && (
+      {recommended && recommended.length > 0 && (
         <section>
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 text-slate-800 dark:text-slate-100">
+          <h2 className="text-xl md:text-2xl font-bold mb-4 text-[hsl(var(--foreground-kid))]">
             Just For You ✨
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-6">
             {recommended.map((item) => (
               <ContentDisplayCard key={`reco-${item.id}`} item={item} />
             ))}
           </div>
         </section>
       )}
-
       {/* Explore by Subject Section */}
       <section>
-        <h2 className="text-2xl md:text-3xl font-bold mb-6 text-slate-800 dark:text-slate-100">
+        <h2 className="text-xl md:text-2xl font-bold mb-4 text-[hsl(var(--foreground-kid))]">
           Explore Subjects
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
           {subjects.map((subject) => {
             return (
               <Link
-                href={`/kid/subject/${subject.name.toLowerCase()}`}
+                href={`/kid/subject/${subject.name
+                  .toLowerCase()
+                  .replace(/\s+/g, "-")}`}
                 key={subject.name}
                 className="group block"
               >
-                <Card className="text-center p-4 md:p-6 aspect-square flex flex-col items-center justify-center rounded-2xl shadow-md hover:shadow-xl dark:hover:shadow-primary/30 bg-white dark:bg-slate-800 hover:border-primary dark:hover:border-primary transition-all transform hover:scale-105 border-2 border-transparent">
-                  <HelpCircle className="h-10 w-10 md:h-12 md:w-12 text-primary mb-2 md:mb-3 transition-transform group-hover:scale-110" />
-                  <p className="font-semibold text-sm md:text-md text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">
+                <Card className="text-center p-3 sm:p-4 aspect-[4/3] sm:aspect-square flex flex-col items-center justify-center rounded-2xl shadow-md hover:shadow-xl dark:hover:shadow-[hsl(var(--primary-kid))]/30 bg-[hsl(var(--card-kid))] hover:border-[hsl(var(--primary-kid))] dark:hover:border-[hsl(var(--primary-kid))] transition-all transform hover:scale-105 border-2 border-transparent">
+                  <LucideIcons.HelpCircle className="h-8 w-8 sm:h-10 sm:w-10 text-[hsl(var(--primary-kid))] mb-1 sm:mb-2 transition-transform group-hover:scale-110" />
+                  <p className="font-semibold text-xs sm:text-sm text-[hsl(var(--card-foreground-kid))] group-hover:text-[hsl(var(--primary-kid))] transition-colors">
                     {subject.name}
                   </p>
                   {subject.itemCount !== undefined && (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[10px] sm:text-xs text-[hsl(var(--muted-kid-foreground))]">
                       {subject.itemCount} activities
                     </p>
                   )}
@@ -308,22 +267,21 @@ export default async function KidHomePage() {
           })}
         </div>
       </section>
-
-      {/* Placeholder for AI Roadmap */}
+      {/* AI Roadmap Placeholder */}
       <section>
-        <Card className="p-6 md:p-8 bg-gradient-to-r from-teal-400 via-cyan-500 to-sky-600 rounded-2xl shadow-xl text-white text-center">
-          <CardTitle className="text-2xl md:text-3xl font-bold mb-3">
-            Your AI Learning Roadmap
+        <Card className="p-6 md:p-8 bg-gradient-to-r from-[hsl(var(--secondary-kid))] via-[hsl(var(--primary-kid))] to-[hsl(var(--accent-kid))] rounded-2xl shadow-xl text-center">
+          <CardTitle className="text-2xl md:text-3xl font-bold mb-3 text-white">
+            Your Personal Learning Path!
           </CardTitle>
-          <CardDescription className="text-lg opacity-90 mb-6">
-            A personalized journey just for you, coming soon!
+          <CardDescription className="text-lg text-white/80 mb-6">
+            AI will help guide your adventure, coming very soon!
           </CardDescription>
           <Button
             size="lg"
-            variant="secondary"
-            className="bg-white/90 hover:bg-white text-teal-600 font-semibold shadow-md"
+            variant="outline"
+            className="bg-white/20 hover:bg-white/30 border-white/50 text-white font-semibold shadow-md text-md px-6 py-3"
           >
-            Learn More (Soon)
+            What&apos;s Next? (AI Roadmap)
           </Button>
         </Card>
       </section>
