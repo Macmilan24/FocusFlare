@@ -1,37 +1,35 @@
-import { PrismaClient, ContentType, Prisma, Badge } from "@prisma/client";
+import { PrismaClient, ContentType, Prisma } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
   // --- NEW: Seed Badges ---
   console.log("Seeding badges...");
-  const badgesToSeed: Omit<Badge, "id" | "createdAt" | "userBadges">[] = [
-    // Omit fields Prisma handles
+  const badgesToSeed = [
     {
       name: "Story Novice",
-      description: "Welcome to the world of stories!",
-      iconSlug: "BookHeart", // Example Lucide icon name
-      criteriaText: "Complete your first story.",
-    },
-    {
-      name: "Quiz Challenger",
-      description: "You faced your first quiz challenge!",
-      iconSlug: "Sparkles", // Example Lucide icon name
-      criteriaText: "Complete your first quiz.",
+      description: "Read your first story!",
+      iconSlug: "BookOpenText",
+      criteriaText: "Complete 1 story",
     },
     {
       name: "Bookworm Beginner",
-      description: "You're on your way to becoming a great reader!",
-      iconSlug: "LibraryBig",
-      criteriaText: "Complete 3 stories.",
+      description: "Read 3 amazing stories!",
+      iconSlug: "Library",
+      criteriaText: "Complete 3 stories",
+    },
+    {
+      name: "Quiz Challenger",
+      description: "Tackled your first quiz!",
+      iconSlug: "HelpCircle",
+      criteriaText: "Attempt 1 quiz",
     },
     {
       name: "Puzzle Pro",
-      description: "You've mastered the basics of quizzing!",
-      iconSlug: "Puzzle",
-      criteriaText: "Pass 3 quizzes.",
+      description: "Mastered 3 quizzes!",
+      iconSlug: "Brain",
+      criteriaText: "Pass 3 quizzes",
     },
   ];
-
   for (const badgeData of badgesToSeed) {
     await prisma.badge.upsert({
       where: { name: badgeData.name },
@@ -241,3 +239,5 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+//

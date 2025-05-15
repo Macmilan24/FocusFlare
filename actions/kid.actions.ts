@@ -1,4 +1,4 @@
-// actions/kid.actions.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import prisma from "@/lib/db/prisma";
@@ -128,4 +128,71 @@ export async function getSubjectCategories(): Promise<SubjectCategory[]> {
     },
     // Add more, ensure iconSlugs match Lucide names
   ];
+}
+
+export async function getLearningContentBySubject(
+  subjectNameQuery: string // e.g., "Mathematics", "StoryTime", "QuizZone"
+): Promise<ContentCardItem[]> {
+  // No session check needed here if content is public or if page calling it handles auth
+  // However, if subject content is restricted, add session check.
+
+  // Normalize subjectNameQuery if it comes from a slug (e.g., "story-time" -> "StoryTime")
+  // The page component should handle converting slug to the exact subject name stored in DB.
+  // For this action, we expect the *exact* subject name as stored.
+
+  try {
+    const items = await prisma.learningContent.findMany({
+      where: {
+        subject: subjectNameQuery,
+        // Optionally filter by other criteria like 'published: true'
+      },
+      orderBy: [
+        // { orderInCourse: 'asc' }, // If you have an order field
+        { title: "asc" },
+      ],
+      select: {
+        // Select fields needed for ContentCardItem
+        id: true,
+        title: true,
+        description: true,
+        coverImageUrl: true,
+        contentType: true,
+        subject: true,
+        content: true, // Needed if coverImageUrl is nested in content for some items
+        // course: { select: { title: true } }, // If you want to show course title
+      },
+      // If 'coverImageUrl' is top-level on LearningContent, no need to select 'content' for it.
+      // If 'course' relation is needed for courseTitle, uncomment include/select.
+    });
+
+    return items.map((item) => {
+      // Extract coverImageUrl if it's nested in content for older items (legacy)
+      // If coverImageUrl is a direct field on LearningContent, this becomes simpler.
+      let coverImg = item.coverImageUrl; // Assumes coverImageUrl is a direct field now
+      if (
+        !coverImg &&
+        item.content &&
+        typeof item.content === "object" &&
+        "coverImageUrl" in item.content
+      ) {
+        coverImg = (item.content as any).coverImageUrl as string | null;
+      }
+
+      return {
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        coverImageUrl: coverImg,
+        contentType: item.contentType,
+        subject: item.subject,
+        // courseTitle: item.course?.title,
+      };
+    });
+  } catch (error) {
+    console.error(
+      `Error fetching content for subject "${subjectNameQuery}":`,
+      error
+    );
+    return [];
+  }
 }

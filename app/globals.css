@@ -181,48 +181,41 @@ body {
 }
 
 .kid-theme {
-  --background-kid: 203 100% 96%; /* Very light sky blue (hsl(203, 100%, 96%)) */
-  --foreground-kid: 215 28% 17%; /* Dark grayish blue */
-
+  --background-kid: 210 60% 98%; /* Very light blue/sky */
+  --foreground-kid: 240 10% 20%; /* Dark, soft charcoal */
   --card-kid: 0 0% 100%; /* White cards */
-  --card-foreground-kid: 215 28% 17%;
-
-  --primary-kid: 217 91% 60%; /* Bright Blue (hsl(217, 91%, 60%)) e.g., blue-500 */
-  --primary-kid-foreground: 0 0% 100%; /* White */
-
-  --secondary-kid: 142 71% 45%; /* Bright Green (hsl(142, 71%, 45%)) e.g., emerald-500 */
-  --secondary-kid-foreground: 0 0% 100%; /* White */
-
-  --accent-kid: 45 93% 47%; /* Bright Yellow (hsl(45, 93%, 47%)) e.g., amber-500 */
-  --accent-kid-foreground: 215 28% 17%; /* Dark text on yellow */
-
-  --muted-kid: 210 40% 97%; /* Lighter than page bg for subtle elements */
-  --muted-kid-foreground: 215 20.2% 55.1%;
-
-  --border-kid: 214.3 31.8% 88%; /* Lighter border */
-  /* Add more as needed */
+  --card-foreground-kid: 240 10% 20%;
+  --popover-kid: 0 0% 100%;
+  --popover-foreground-kid: 240 10% 20%;
+  --primary-kid: 340 90% 60%; /* Playful Pink/Magenta */
+  --primary-kid-foreground: 0 0% 100%;
+  --secondary-kid: 180 80% 45%; /* Playful Teal/Cyan */
+  --secondary-kid-foreground: 0 0% 100%;
+  --accent-kid: 45 100% 55%; /* Playful Yellow/Orange */
+  --accent-kid-foreground: 240 10% 10%;
+  --muted-kid: 220 20% 92%; /* Lighter gray for muted backgrounds */
+  --muted-kid-foreground: 220 10% 45%;
+  --border-kid: 220 20% 85%;
+  --ring-kid: var(--primary-kid);
 }
 
 .dark .kid-theme {
-  --background-kid: 220 13% 18%; /* Dark Blue/Gray (hsl(220, 13%, 18%)) */
-  --foreground-kid: 210 40% 98%; /* Light Gray/White */
-
-  --card-kid: 220 13% 22%; /* Slightly lighter than bg */
-  --card-foreground-kid: 210 40% 98%;
-
-  --primary-kid: 217 91% 70%; /* Lighter Bright Blue for dark mode */
-  --primary-kid-foreground: 220 13% 10%; /* Dark text */
-
-  --secondary-kid: 142 71% 55%; /* Lighter Bright Green */
-  --secondary-kid-foreground: 220 13% 10%;
-
-  --accent-kid: 45 93% 57%; /* Lighter Bright Yellow */
-  --accent-kid-foreground: 220 13% 10%;
-
-  --muted-kid: 220 13% 25%;
-  --muted-kid-foreground: 215 20.2% 75.1%;
-
-  --border-kid: 220 13% 30%;
+  --background-kid: 240 10% 12%; /* Dark Blue/Purple */
+  --foreground-kid: 210 30% 90%; /* Light Gray */
+  --card-kid: 240 10% 18%; /* Darker card */
+  --card-foreground-kid: 210 30% 90%;
+  --popover-kid: 240 10% 15%;
+  --popover-foreground-kid: 210 30% 90%;
+  --primary-kid: 340 95% 70%; /* Brighter Pink/Magenta for dark mode */
+  --primary-kid-foreground: 240 10% 10%;
+  --secondary-kid: 180 85% 60%; /* Brighter Teal/Cyan */
+  --secondary-kid-foreground: 240 10% 10%;
+  --accent-kid: 45 100% 65%; /* Brighter Yellow/Orange */
+  --accent-kid-foreground: 240 10% 10%;
+  --muted-kid: 240 10% 22%;
+  --muted-kid-foreground: 220 15% 60%;
+  --border-kid: 240 10% 25%;
+  --ring-kid: var(--primary-kid);
 }
 
 /* Apply the background to the body if kid-theme is present */
