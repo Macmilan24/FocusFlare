@@ -1,10 +1,8 @@
-// app/(platform)/kid/(kid-platform)/badges/page.tsx
 import { getEarnedBadgesForUser } from "@/actions/gamification.actions";
 import { Card, CardTitle } from "@/components/ui/card"; // For dynamic badge icons
 import { Award } from "lucide-react"; // Default icon
 
 export default async function KidBadgesPage() {
-  // Fetches badges for the logged-in child (getEarnedBadgesForUser handles session)
   const { badges, error } = await getEarnedBadgesForUser();
 
   return (

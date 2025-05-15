@@ -1,26 +1,23 @@
-// app/(platform)/parent/(parent-dashboard)/overview/page.tsx
-import { auth } from "@/lib/auth"; // Adjust path if your auth.ts is elsewhere
+import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Users,
   BookText,
   CheckCircle,
-  BookOpenText, // Specifically for story completions
-  BellRing, // For recent activity feed title
+  BookOpenText,
+  BellRing,
 } from "lucide-react";
 import Link from "next/link";
 
 import {
   getParentDashboardStats,
   ParentDashboardStats,
-  getRecentActivityFeed, // Import the new action
-  ActivityFeedItem, // Import the new type
-} from "@/actions/parent.actions"; // Adjust path if actions are split
-import { formatDistanceToNow } from "date-fns"; // For user-friendly timestamps
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"; // For child avatar in feed
-
-// Ensure you have run: npm install date-fns
+  getRecentActivityFeed,
+  ActivityFeedItem,
+} from "@/actions/parent.actions";
+import { formatDistanceToNow } from "date-fns";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default async function ParentOverviewPage() {
   const session = await auth();
@@ -36,19 +33,17 @@ export default async function ParentOverviewPage() {
     redirect("/auth/signin");
   }
 
-  // Fetch both stats and activity feed in parallel
   const [statsResult, feedResult] = await Promise.all([
-    getParentDashboardStats(), // This action now gets parentId from session internally
-    getRecentActivityFeed(5), // Fetch last 5 activities
+    getParentDashboardStats(),
+    getRecentActivityFeed(5),
   ]);
 
-  // Fallback for stats if the action fails or returns no data
   const displayStats: ParentDashboardStats = statsResult.stats || {
     totalChildren: 0,
     totalStoriesCompleted: 0,
     totalQuizzesPassed: 0,
     averageQuizScore: null,
-    quizzesTakenCount: 0, // Make sure this is part of ParentDashboardStats type and returned by the action
+    quizzesTakenCount: 0,
   };
 
   const activityFeed: ActivityFeedItem[] = feedResult.feed || [];
@@ -66,7 +61,6 @@ export default async function ParentOverviewPage() {
         </p>
       </div>
 
-      {/* Stats Cards Section */}
       {statsError && (
         <Card className="bg-destructive/10 border-destructive">
           <CardContent className="p-4 text-destructive text-sm">
@@ -129,7 +123,6 @@ export default async function ParentOverviewPage() {
                   Avg. Score: {displayStats.averageQuizScore}%
                 </p>
               )}
-              {/* Adjusted logic for quiz taken vs passed messages */}
               {displayStats.quizzesTakenCount > 0 &&
                 displayStats.totalQuizzesPassed === 0 && (
                   <p className="text-xs text-muted-foreground">
@@ -146,10 +139,7 @@ export default async function ParentOverviewPage() {
         </div>
       )}
 
-      {/* Other Widgets: Recent Activity & Parent Resources */}
       <div className="grid gap-6 md:grid-cols-2">
-        {" "}
-        {/* md:grid-cols-2 makes them take half width on medium screens up */}
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg font-semibold flex items-center">
@@ -167,8 +157,6 @@ export default async function ParentOverviewPage() {
             )}
             {!feedError && activityFeed.length > 0 && (
               <ul className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar pr-2">
-                {" "}
-                {/* Added max-height and scroll */}
                 {activityFeed.map((item) => (
                   <li
                     key={item.id}

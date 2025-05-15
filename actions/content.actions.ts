@@ -37,10 +37,9 @@ export interface QuizListItem {
   title: string;
   description: string | null;
   questionCount?: number;
-  coverImageUrl?: string | null; // If quizzes can have cover images
+  coverImageUrl?: string | null;
 }
 
-// --- NEW QUIZ DETAIL INTERFACES ---
 export interface QuizOption {
   id: string;
   text: string;
@@ -51,17 +50,15 @@ export interface QuizQuestion {
   text: string;
   options: QuizOption[];
   correctOptionId: string;
-  explanation?: string | null; // Optional explanation for after submission
+  explanation?: string | null;
 }
 
 export interface QuizData {
-  // Data structure for a single quiz
   id: string;
   title: string;
   description?: string | null;
   questions: QuizQuestion[];
   passingScorePercentage?: number | null;
-  // coverImageUrl?: string | null; // If quizzes have cover images
 }
 
 export async function getStoriesList(): Promise<{
@@ -109,7 +106,6 @@ export async function getStoriesList(): Promise<{
   }
 }
 
-// --- GET STORY PAGE CONTENT ACTION ---
 export async function getStoryById(
   storyId: string
 ): Promise<{ story?: StoryPageContent; error?: string }> {
@@ -134,7 +130,7 @@ export async function getStoryById(
     let coverImageUrl: string | null = null;
 
     if (contentItem.content && typeof contentItem.content === "object") {
-      const contentJson = contentItem.content as any; // Cast for easier access
+      const contentJson = contentItem.content as any;
 
       if (
         "coverImageUrl" in contentJson &&
@@ -145,7 +141,7 @@ export async function getStoryById(
 
       if ("pages" in contentJson && Array.isArray(contentJson.pages)) {
         parsedPages = contentJson.pages
-          .filter((page: any) => page && typeof page.text === "string") // Ensure page and text exist
+          .filter((page: any) => page && typeof page.text === "string")
           .map((page: any) => ({
             text: page.text,
             imageUrl:
@@ -157,7 +153,6 @@ export async function getStoryById(
     }
 
     if (parsedPages.length === 0) {
-      // Fallback if no valid pages found after parsing
       parsedPages = [
         {
           text: "This story seems to be missing its content or has a formatting issue.",
@@ -179,7 +174,6 @@ export async function getStoryById(
   }
 }
 
-// --- MARK STORY AS COMPLETED ACTION ---
 export async function markStoryAsCompleted(
   contentId: string
 ): Promise<MarkCompletionResult> {
@@ -213,7 +207,7 @@ export async function markStoryAsCompleted(
           startedAt: new Date(),
           lastAccessed: new Date(),
         },
-        select: { status: true }, // Only need status for the condition
+        select: { status: true },
       });
       console.log("[Transaction] Progress upserted. Status:", progress.status);
 
@@ -232,10 +226,10 @@ export async function markStoryAsCompleted(
           console.error(
             "[Transaction] CRITICAL: User not found during point update!"
           );
-          throw new Error("User not found for point update."); // This will rollback the transaction
+          throw new Error("User not found for point update.");
         }
 
-        const currentPoints = userBeforePointUpdate.points || 0; // Default to 0 if points is null
+        const currentPoints = userBeforePointUpdate.points || 0;
         console.log(
           "[Transaction] User current points BEFORE explicit update:",
           currentPoints
@@ -247,7 +241,7 @@ export async function markStoryAsCompleted(
         const updatedUser = await tx.user.update({
           where: { id: userId },
           data: {
-            points: finalPoints, // Explicitly SET the new total
+            points: finalPoints,
           },
           select: { points: true },
         });
@@ -255,10 +249,8 @@ export async function markStoryAsCompleted(
           "[Transaction] Points SET. New total points from DB:",
           updatedUser.points
         );
-        finalPoints = updatedUser.points; // Update finalPoints with actual value from DB
+        finalPoints = updatedUser.points;
       } else {
-        // If progress status wasn't 'completed' (e.g., already completed before)
-        // Fetch current points to return accurately
         const currentUser = await tx.user.findUnique({
           where: { id: userId },
           select: { points: true },
@@ -290,7 +282,6 @@ export async function markStoryAsCompleted(
     return { error: "Failed to mark story as completed or award points." };
   }
 }
-// -- Quizzess List
 
 export async function getQuizzesList(): Promise<{
   quizzes?: QuizListItem[];
@@ -300,16 +291,16 @@ export async function getQuizzesList(): Promise<{
     const quizContentItems = await prisma.learningContent.findMany({
       where: {
         contentType: ContentType.QUIZ,
-        subject: "QuizZone", // Or make subject dynamic
+        subject: "QuizZone",
       },
       orderBy: {
-        createdAt: "asc", // Or by title
+        createdAt: "asc",
       },
       select: {
         id: true,
         title: true,
         description: true,
-        content: true, // To extract question count or cover image
+        content: true,
       },
     });
 
@@ -349,7 +340,6 @@ export async function getQuizzesList(): Promise<{
   }
 }
 
-// --- NEW SERVER ACTION: getQuizById ---
 export async function getQuizById(
   quizId: string
 ): Promise<{ quiz?: QuizData; error?: string }> {
@@ -361,13 +351,13 @@ export async function getQuizById(
     const contentItem = await prisma.learningContent.findUnique({
       where: {
         id: quizId,
-        contentType: ContentType.QUIZ, // Ensure it's a quiz
+        contentType: ContentType.QUIZ,
       },
       select: {
         id: true,
         title: true,
         description: true,
-        content: true, // The JSON field containing quiz structure
+        content: true,
       },
     });
 
@@ -375,17 +365,11 @@ export async function getQuizById(
       return { error: "Quiz not found or is not a quiz." };
     }
 
-    // --- Parse the JSON content into our QuizData structure ---
     let questions: QuizQuestion[] = [];
     let passingScorePercentage: number | null = null;
-    // let coverImageUrl: string | null = null; // If you add this
 
     if (contentItem.content && typeof contentItem.content === "object") {
-      const contentJson = contentItem.content as any; // Cast for easier access
-
-      // if ('coverImageUrl' in contentJson && typeof contentJson.coverImageUrl === 'string') {
-      //   coverImageUrl = contentJson.coverImageUrl;
-      // }
+      const contentJson = contentItem.content as any;
 
       if (
         "passingScorePercentage" in contentJson &&
@@ -397,9 +381,7 @@ export async function getQuizById(
       if ("questions" in contentJson && Array.isArray(contentJson.questions)) {
         questions = contentJson.questions
           .filter(
-            (
-              q: any // Basic validation for each question object
-            ) =>
+            (q: any) =>
               q &&
               typeof q.id === "string" &&
               typeof q.text === "string" &&
@@ -427,11 +409,9 @@ export async function getQuizById(
     }
 
     if (questions.length === 0) {
-      // Fallback or error if no valid questions found
       console.warn(
         `Quiz ${contentItem.id} has missing or malformed question content.`
       );
-      // Depending on requirements, you might return an error or an empty questions array
       return { error: "Quiz content is invalid or missing questions." };
     }
 
@@ -441,7 +421,6 @@ export async function getQuizById(
       description: contentItem.description,
       questions: questions,
       passingScorePercentage: passingScorePercentage,
-      // coverImageUrl: coverImageUrl,
     };
 
     return { quiz };

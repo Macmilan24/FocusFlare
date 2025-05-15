@@ -186,7 +186,7 @@ body {
   --card-kid: 0 0% 100%; /* White cards */
   --card-foreground-kid: 240 10% 20%;
   --popover-kid: 0 0% 100%;
-  --popover-foreground-kid: 240 10% 20%;
+  --popover-foreground-kid: 222.2 84% 4.9%;
   --primary-kid: 340 90% 60%; /* Playful Pink/Magenta */
   --primary-kid-foreground: 0 0% 100%;
   --secondary-kid: 180 80% 45%; /* Playful Teal/Cyan */
@@ -204,8 +204,8 @@ body {
   --foreground-kid: 210 30% 90%; /* Light Gray */
   --card-kid: 240 10% 18%; /* Darker card */
   --card-foreground-kid: 210 30% 90%;
-  --popover-kid: 240 10% 15%;
-  --popover-foreground-kid: 210 30% 90%;
+  --popover-kid: 222.2 84% 7%;
+  --popover-foreground-kid: 210 40% 98%;
   --primary-kid: 340 95% 70%; /* Brighter Pink/Magenta for dark mode */
   --primary-kid-foreground: 240 10% 10%;
   --secondary-kid: 180 85% 60%; /* Brighter Teal/Cyan */

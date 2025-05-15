@@ -76,7 +76,6 @@ export async function getChildProgressDetails(
   const link = await prisma.parentChildLink.findUnique({
     where: {
       parentId_childId: {
-        // This assumes you have @@unique([parentId, childId]) on ParentChildLink
         parentId: parentId,
         childId: childId,
       },
@@ -91,8 +90,6 @@ export async function getChildProgressDetails(
   }
 
   try {
-    // Fetch child details along with all their learning progress,
-    // and for each progress item, include the title and type of the content.
     const childUserWithProgress = await prisma.user.findUnique({
       where: { id: childId },
       select: {
@@ -101,7 +98,6 @@ export async function getChildProgressDetails(
         name: true,
         username: true,
         learningProgress: {
-          // Select from the related UserLearningProgress records
           orderBy: {
             lastAccessed: "desc", // Show most recent activity first
           },
@@ -113,7 +109,6 @@ export async function getChildProgressDetails(
             completedAt: true,
             lastAccessed: true,
             content: {
-              // For each UserLearningProgress, select from its related LearningContent
               select: {
                 title: true,
                 contentType: true,
@@ -125,8 +120,6 @@ export async function getChildProgressDetails(
     });
 
     if (!childUserWithProgress) {
-      // This should ideally not happen if the parentChildLink check passed,
-      // but it's a good defensive check.
       return { error: "Child user details not found." };
     }
 
@@ -135,7 +128,7 @@ export async function getChildProgressDetails(
       childUserWithProgress.learningProgress.map((p) => ({
         contentId: p.contentId,
         contentTitle: p.content.title, // Title from the included content relation
-        contentType: p.content.contentType, // Type from the included content relation
+        contentType: p.content.contentType,
         status: p.status,
         score: p.score,
         completedAt: p.completedAt,
@@ -272,11 +265,10 @@ export async function getChildProgressDetailsForReport(
       };
     });
 
-    // --- Prepare Activity Feed (similar to before, but ensure using full childProgressRecords) ---
+    // --- Prepare Activity Feed ---
     const activityFeed: ProgressItemSummary[] = childProgressRecords
       .slice(0, 10)
       .map((p) => ({
-        // Example: last 10
         contentId: p.contentId,
         contentTitle: p.content.title,
         contentType: p.content.contentType,

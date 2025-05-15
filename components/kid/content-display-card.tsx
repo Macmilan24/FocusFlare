@@ -1,5 +1,4 @@
-// components/kid/content-display-card.tsx
-"use client"; // If it uses client-side hooks like Link, or for consistency
+"use client";
 
 import Link from "next/link";
 import Image from "next/image";
@@ -7,20 +6,17 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import * as LucideIcons from "lucide-react";
-import { ContentType } from "@prisma/client"; // Make sure this is imported
-import type { ContentCardItem } from "@/actions/kid.actions"; // Import the type
+import { ContentType } from "@prisma/client";
+import type { ContentCardItem } from "@/actions/kid.actions";
 
 interface ContentDisplayCardProps {
-  // Renamed for clarity within this component file
   item: ContentCardItem;
 }
 
 // Use a named export
 export function ContentDisplayCard({ item }: ContentDisplayCardProps) {
   let linkHref = "#";
-  let IconType: LucideIcons.LucideIcon | undefined = undefined; // Use undefined for no icon
-
-  // Determine link and icon based on contentType
+  let IconType: LucideIcons.LucideIcon | undefined = undefined;
   if (item.contentType === ContentType.STORY) {
     linkHref = `/kid/stories/${item.id}`;
     IconType = LucideIcons.BookHeart;
@@ -28,18 +24,16 @@ export function ContentDisplayCard({ item }: ContentDisplayCardProps) {
     linkHref = `/kid/quizzes/${item.id}`;
     IconType = LucideIcons.Brain;
   } else if (item.contentType === ContentType.LESSON) {
-    linkHref = `/kid/lessons/${item.id}`; // Assuming this path
+    linkHref = `/kid/lessons/${item.id}`;
     IconType = LucideIcons.ClipboardList;
   } else if (item.contentType === ContentType.COURSE) {
-    linkHref = `/kid/courses/${item.id}`; // Assuming this path
+    linkHref = `/kid/courses/${item.id}`;
     IconType = LucideIcons.LibraryBig;
   }
   // Add more content types as needed
 
   return (
     <Link href={linkHref} passHref className="block group h-full">
-      {" "}
-      {/* Ensure h-full for consistent card height in grid */}
       <Card className="h-full flex flex-col overflow-hidden shadow-lg hover:shadow-xl dark:hover:shadow-[hsl(var(--primary-kid))]/30 transition-all duration-300 ease-in-out transform hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring-kid))] focus-visible:ring-offset-2 border-2 border-transparent hover:border-[hsl(var(--primary-kid))]/50 rounded-2xl bg-[hsl(var(--card-kid))] text-[hsl(var(--card-foreground-kid))]">
         <div className="relative w-full h-36 sm:h-40">
           {item.coverImageUrl ? (

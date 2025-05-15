@@ -1,4 +1,3 @@
-// app/(platform)/kid/stories/[storyId]/page.tsx
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getStoryById } from "@/actions/content.actions";

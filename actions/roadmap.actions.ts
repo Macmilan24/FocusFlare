@@ -8,7 +8,7 @@ import type * as LucideIcons from "lucide-react"; // For icon slugs
 
 // --- DEFINE ROADMAP INTERFACES HERE ---
 export interface RoadmapNode {
-  id: string; // Unique ID for this node on the roadmap (could be LearningContent ID)
+  id: string;
   learningContentId: string; // Actual ID of the LearningContent
   title: string;
   contentType: ContentType;
@@ -16,7 +16,6 @@ export interface RoadmapNode {
   iconSlug?: keyof typeof LucideIcons;
   subject?: string;
   order: number;
-  // Add link property to be constructed here for clarity on the client
   link: string;
 }
 
@@ -24,7 +23,6 @@ export interface RoadmapMilestone {
   title: string;
   nodes: RoadmapNode[];
   isCompleted: boolean;
-  // Add other milestone properties like an overall icon or theme
 }
 // --- END ROADMAP INTERFACES ---
 
@@ -101,13 +99,8 @@ export async function getKidRoadmapData(): Promise<{
       if (firstUpcoming) {
         firstUpcoming.status = "current";
       } else if (roadmapNodes.every((node) => node.status === "completed")) {
-        // All items are completed, could add a special "Congratulations!" node
-        // Or this state is handled on the UI page
       }
     }
-
-    // For now, returning a flat list of nodes.
-    // Grouping into milestones will be a next step if we pursue that.
     return { nodes: roadmapNodes };
   } catch (error) {
     console.error("Error fetching kid roadmap data:", error);

@@ -1,7 +1,7 @@
 // app/(platform)/kid/(kid-platform)/roadmap/page.tsx
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getKidRoadmapData, RoadmapNode } from "@/actions/roadmap.actions"; // Adjust path
+import { getKidRoadmapData } from "@/actions/roadmap.actions"; // Adjust path
 import { KidRoadmapView } from "@/components/kid/kid-roadmap-view"; // Client component for display
 import { AlertTriangle, Map } from "lucide-react";
 

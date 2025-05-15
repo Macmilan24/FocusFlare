@@ -43,39 +43,59 @@ async function main() {
 
   // --- Seed Learning Content (Stories) ---
 
-  const mathCourse = await prisma.course.upsert({
-    where: { title: "Beginner Math Fun" },
-    update: {},
-    create: {
-      title: "Beginner Math Fun",
-      description: "Learn basic math concepts with exciting activities!",
-      subject: "Mathematics", // Matches your KidHomePage subject
-      coverImageUrl: "/images/courses/math_beginners.png", // Placeholder
+  const coursesInputData = [
+    {
+      title: "Math Adventure: Numbers Up To 10",
+      description:
+        "A fun journey into the world of counting and basic addition with numbers up to 10.",
+      subject: "Mathematics",
+      coverImageUrl: "/images/courses/math_adventure_cover.png",
       published: true,
     },
-  });
-
-  const readingCourse = await prisma.course.upsert({
-    where: { title: "Reading Adventures" },
-    update: {},
-    create: {
-      title: "Reading Adventures",
-      description: "Explore the world of words and wonderful stories.",
-      subject: "Reading", // Matches your KidHomePage subject
-      coverImageUrl: "/images/courses/reading_adventures.png",
+    {
+      title: "Cosmic Story Quest",
+      description:
+        "Embark on exciting reading adventures through space and magical lands!",
+      subject: "StoryTime",
+      coverImageUrl: "/images/courses/cosmic_stories_cover.png",
       published: true,
     },
-  });
-  console.log("Courses seeded.");
+  ];
 
-  const storiesToSeed = [
+  const createdCoursesMap = new Map<string, string>(); // Map: course title -> generated course ID
+
+  for (const courseData of coursesInputData) {
+    const course = await prisma.course.upsert({
+      where: { title: courseData.title }, // Upsert based on unique title
+      update: {
+        // Fields to update if course already exists
+        description: courseData.description,
+        subject: courseData.subject,
+        coverImageUrl: courseData.coverImageUrl,
+        published: courseData.published,
+      },
+      create: {
+        // Fields for creating a new course (ID will be auto-generated)
+        title: courseData.title,
+        description: courseData.description,
+        subject: courseData.subject,
+        coverImageUrl: courseData.coverImageUrl,
+        published: courseData.published,
+      },
+    });
+    createdCoursesMap.set(course.title, course.id); // Store title and its new ID
+    console.log(`Created/updated course: ${course.title} (ID: ${course.id})`);
+  }
+
+  console.log("Seeding learning content and linking to courses...");
+
+  const learningContentInputData = [
     {
       title: "The Little Blue Rocket",
       description: "A story about a brave little rocket exploring space.",
-      contentType: ContentType.STORY, // Still a story, but can be part of a course as a "lesson"
-      subject: "Reading", // Align subject with course
-      coverImageUrl: "/images/stories/covers/blue_rocket_cover.png", // Now top-level
-      courseId: readingCourse.id, // Link to course
+      contentType: ContentType.STORY,
+      subject: "StoryTime", // Subject of the content item itself
+      courseTitleToLink: "Cosmic Story Quest", // Temporary field to find course ID
       orderInCourse: 1,
       content: {
         coverImageUrl: "/images/stories/covers/blue_rocket_cover.png", // Example path
@@ -104,11 +124,13 @@ async function main() {
       },
     },
     {
-      title: "The Magical Treehouse",
+      title: "The Lost Star",
       description:
-        "Join Lily and Tom on an adventure in their magical treehouse.",
+        "A little star gets lost and tries to find its way back home.",
       contentType: ContentType.STORY,
       subject: "StoryTime",
+      courseTitleToLink: "Cosmic Story Quest",
+      orderInCourse: 2,
       content: {
         coverImageUrl: "/images/stories/covers/treehouse_cover.png",
         pages: [
@@ -133,12 +155,12 @@ async function main() {
     },
     // --- NEW QUIZ DATA ---
     {
-      title: "Simple Math Quiz",
-      description: "Test your basic addition skills!",
+      title: "Counting Fun (1-5)",
+      description: "Let's count some fun things!",
       contentType: ContentType.QUIZ,
       subject: "Mathematics",
-      coverImageUrl: "/images/quizzes/math_quiz_cover.png", // Add covers for quizzes too
-      courseId: mathCourse.id,
+      coverImageUrl: "/images/quizzes/counting_fun_cover.png",
+      courseTitleToLink: "Math Adventure: Numbers Up To 10",
       orderInCourse: 1, // New subject for quizzes
       content: {
         questions: [
@@ -169,10 +191,13 @@ async function main() {
       } as unknown as Prisma.JsonValue, // Cast to Prisma.JsonValue
     },
     {
-      title: "Animal Sounds Quiz",
-      description: "Do you know your animal sounds?",
+      title: "Adding Small Numbers",
+      description: "Practice adding numbers up to 5.",
       contentType: ContentType.QUIZ,
-      subject: "QuizZone",
+      subject: "Mathematics",
+      coverImageUrl: "/images/quizzes/adding_small_cover.png",
+      courseTitleToLink: "Math Adventure: Numbers Up To 10",
+      orderInCourse: 2,
       content: {
         questions: [
           {
@@ -212,22 +237,43 @@ async function main() {
     },
   ];
 
-  for (const itemData of storiesToSeed) {
-    const contentJson: Prisma.JsonValue = itemData.content; // Already cast above
+  for (const itemData of learningContentInputData) {
+    const { courseTitleToLink, ...contentDataToSave } = itemData; // Separate linking field
+
+    let courseIdToSet: string | null = null;
+    if (courseTitleToLink) {
+      courseIdToSet = createdCoursesMap.get(courseTitleToLink) || null;
+      if (!courseIdToSet) {
+        console.warn(
+          `WARNING: Course titled "${courseTitleToLink}" not found for content "${contentDataToSave.title}". It will be standalone.`
+        );
+      }
+    }
 
     await prisma.learningContent.upsert({
       where: {
-        title_subject: { title: itemData.title, subject: itemData.subject },
-      }, // Relies on @@unique([title, subject])
-      update: { ...itemData, content: contentJson ?? {} },
-      create: { ...itemData, content: contentJson ?? {} },
+        title_subject: {
+          title: contentDataToSave.title,
+          subject: contentDataToSave.subject,
+        },
+      },
+      update: {
+        ...contentDataToSave,
+        content: contentDataToSave.content ?? ({} as Prisma.InputJsonValue),
+        courseId: courseIdToSet, // Use the fetched or null courseId
+      },
+      create: {
+        ...contentDataToSave,
+        content: contentDataToSave.content ?? ({} as Prisma.InputJsonValue),
+        courseId: courseIdToSet,
+      },
     });
     console.log(
-      `Created/updated content: ${itemData.title} (${itemData.contentType} in ${itemData.subject})`
+      `Created/updated content: ${contentDataToSave.title} (${contentDataToSave.contentType} in ${contentDataToSave.subject})`
     );
   }
 
-  console.log(`Seeding finished.`);
+  console.log(`Seeding finished completely.`);
 }
 
 main()

@@ -97,7 +97,7 @@ export async function submitQuizAnswers(
     const passed =
       passingScorePercentageDb !== null
         ? scorePercentage >= passingScorePercentageDb
-        : false; // Default to false if no threshold
+        : false;
 
     // 3. Calculate points earned for this attempt
     let pointsEarnedThisAttempt = POINTS_FOR_COMPLETING_QUIZ;

@@ -22,7 +22,6 @@ const initialAddChildState: AddChildFormState = {
 };
 
 function SubmitButton() {
-  // Renamed from AddChildButton to be more generic for a submit
   const { pending } = useFormStatus();
   return (
     <Button

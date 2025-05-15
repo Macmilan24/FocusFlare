@@ -28,7 +28,7 @@ export interface UpdateProfileFormState {
 }
 
 export interface ActivityFeedItem {
-  id: string; // ID of the UserLearningProgress record
+  id: string;
   childId: string;
   childName: string | null;
   childUsername: string | null;
@@ -145,8 +145,6 @@ export async function updateParentProfile(
     const name = formData.get("name") as string;
 
     if (name === null || name.trim() === "") {
-      // Allow empty string to clear name if desired, or add validation
-      // If name is required, add: return { error: "Name cannot be empty." };
     }
 
     const updatedUser = await prisma.user.update({

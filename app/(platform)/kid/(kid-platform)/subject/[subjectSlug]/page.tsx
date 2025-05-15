@@ -1,6 +1,5 @@
-// app/(platform)/kid/(kid-platform)/subject/[subjectSlug]/page.tsx
 import { getLearningContentBySubject } from "@/actions/kid.actions";
-import { ContentDisplayCard } from "@/components/kid/content-display-card"; // Or wherever it's defined
+import { ContentDisplayCard } from "@/components/kid/content-display-card";
 import { capitalizeWords } from "@/lib/utils";
 
 interface SubjectPageProps {
@@ -10,7 +9,7 @@ interface SubjectPageProps {
 export default async function SubjectPage({ params }: SubjectPageProps) {
   const subjectNameFromSlug = params.subjectSlug.replace(/-/g, " ");
   const subjectDisplayName = capitalizeWords(subjectNameFromSlug);
-  const subjectQueryName = subjectDisplayName; // Or a more robust mapping if needed
+  const subjectQueryName = subjectDisplayName;
 
   const contentItems = await getLearningContentBySubject(subjectQueryName);
   return (

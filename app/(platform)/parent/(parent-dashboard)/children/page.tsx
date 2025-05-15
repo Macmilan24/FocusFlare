@@ -1,5 +1,4 @@
-// app/(platform)/parent/(parent-dashboard)/children/page.tsx
-"use client"; // To use hooks for data fetching and state
+"use client";
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
@@ -29,7 +28,7 @@ export default function MyChildrenPage() {
   useEffect(() => {
     if (status === "loading") return;
     if (!session || session.user.role !== "PARENT") {
-      router.push("/auth/signin"); // Or a more appropriate redirect
+      router.push("/auth/signin");
       return;
     }
 
@@ -102,7 +101,6 @@ export default function MyChildrenPage() {
               key={child.id}
               className="group block"
             >
-              {/* Path updated to your chosen child detail path */}
               <Card className="hover:shadow-lg transition-all duration-200 ease-in-out hover:border-primary h-full flex flex-col">
                 <CardHeader className="flex flex-row items-center space-x-4 pb-3">
                   <Avatar className="h-14 w-14">
@@ -120,7 +118,6 @@ export default function MyChildrenPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="flex-grow">
-                  {/* Placeholder for brief stats or last activity - for later */}
                   <p className="text-xs text-muted-foreground">
                     Last active: N/A
                   </p>

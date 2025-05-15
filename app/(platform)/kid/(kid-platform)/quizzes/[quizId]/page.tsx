@@ -1,19 +1,16 @@
-// app/(platform)/kid/quizzes/[quizId]/page.tsx
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getQuizById, QuizData } from "@/actions/content.actions"; // Adjust path
+import { getQuizById } from "@/actions/content.actions";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import QuizView from "@/components/quiz/quiz-view"; // We will create this client component next
-
+import QuizView from "@/components/quiz/quiz-view";
 interface QuizDetailsPageProps {
   params: {
-    quizId: string; // This matches the folder name [quizId]
+    quizId: string;
   };
 }
 
-// This is a Server Component
 export default async function QuizDetailsPage({
   params,
 }: QuizDetailsPageProps) {
@@ -68,6 +65,5 @@ export default async function QuizDetailsPage({
     );
   }
 
-  // Pass the fetched quiz data to the client component that handles interaction
   return <QuizView quiz={quiz} />;
 }

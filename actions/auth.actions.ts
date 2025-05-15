@@ -59,6 +59,8 @@ export interface ChildDashboardOverview
 interface SessionUpdateData {
   name?: string;
   points?: number;
+  image?: string | null;
+  favoriteSubject?: string | null;
 }
 
 export async function authenticate(

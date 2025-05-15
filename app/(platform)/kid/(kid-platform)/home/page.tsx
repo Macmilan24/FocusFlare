@@ -1,4 +1,3 @@
-// app/(platform)/kid/(kid-platform)/home/page.tsx
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import {
@@ -11,8 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import Image from "next/image"; // Keep for content cards
-import { Gem, Award, Edit3, Sparkles as SparkleIcon } from "lucide-react"; // Main icons for this page
-import * as LucideIcons from "lucide-react"; // For dynamic subject icons
+import { Gem, Award, Edit3, Sparkles as SparkleIcon } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import {
   getRecommendedContent,
   getContinueLearningContent,
@@ -27,11 +26,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Progress } from "@/components/ui/progress"; // For continue learning cards
-import { Badge } from "@/components/ui/badge"; // For content type tags on cards
-import { ContentType } from "@prisma/client"; // For ContentDisplayCard
-
-// Reusable Content Display Card (ensure this is styled with kid-theme variables)
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { ContentType } from "@prisma/client";
 function ContentDisplayCard({ item }: { item: ContentCardItem }) {
   let linkHref = "#";
   let IconType: LucideIcons.LucideIcon | null = null;
@@ -43,12 +40,8 @@ function ContentDisplayCard({ item }: { item: ContentCardItem }) {
     linkHref = `/kid/quizzes/${item.id}`;
     IconType = LucideIcons.Brain;
   } else if (item.contentType === ContentType.LESSON) {
-    // Assuming LESSON type
-    // linkHref = `/kid/lessons/${item.id}`;
     IconType = LucideIcons.ClipboardList;
   } else if (item.contentType === ContentType.COURSE) {
-    // Assuming COURSE type
-    // linkHref = `/kid/courses/${item.id}`;
     IconType = LucideIcons.LibraryBig;
   }
 
@@ -104,7 +97,6 @@ function ContentDisplayCard({ item }: { item: ContentCardItem }) {
                 value={item.progressPercentage}
                 className="h-1.5 bg-[hsl(var(--primary-kid))]/20 [&>div]:bg-[hsl(var(--primary-kid))]"
               />
-              {/* <p className="text-xs text-muted-foreground mt-1">{item.progressPercentage}% completed</p> */}
             </div>
           )}
         </CardContent>
@@ -141,9 +133,6 @@ export default async function KidHomePage() {
 
   return (
     <div className="kid-theme-content p-3 sm:p-4 md:p-6 space-y-10 md:space-y-12">
-      {" "}
-      {/* Added kid-theme-content for specific page styling */}
-      {/* Top Profile / Stats Snippet */}
       <section className="flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6 p-4 bg-[hsl(var(--card-kid))] rounded-2xl shadow-lg border border-[hsl(var(--border-kid))]">
         <div className="flex items-center gap-3 sm:gap-4">
           <Avatar className="h-14 w-14 sm:h-16 sm:w-16 border-2 border-[hsl(var(--primary-kid))]">
@@ -202,15 +191,6 @@ export default async function KidHomePage() {
           )}
         </div>
       </section>
-      {/* Optional: A more prominent "What's Next?" or Call to Action Banner */}
-      {/* <section className="p-6 md:p-8 bg-gradient-to-r from-[hsl(var(--primary-kid))] to-[hsl(var(--secondary-kid))] rounded-2xl shadow-xl text-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">Ready for Your Next Adventure?</h2>
-        <p className="text-white/80 mb-6 max-w-lg mx-auto">Pick a subject below or see what we've recommended just for you!</p>
-        <Button size="lg" variant="secondary" className="bg-white text-[hsl(var(--primary-kid))] hover:bg-slate-100 shadow-md text-md px-8 py-3">
-            Explore All Activities
-        </Button>
-      </section> */}
-      {/* Continue Learning Section */}
       {continueLearning && continueLearning.length > 0 && (
         <section>
           <h2 className="text-xl md:text-2xl font-bold mb-4 text-[hsl(var(--foreground-kid))]">

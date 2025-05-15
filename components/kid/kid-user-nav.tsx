@@ -1,4 +1,3 @@
-// components/kid/kid-user-nav.tsx
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { handleSignOut } from "@/actions/auth.actions"; // Assuming central signout action
+import { handleSignOut } from "@/actions/auth.actions";
 import Link from "next/link";
 import { LogOut, UserCircle, Gem, Award, Zap } from "lucide-react";
 import type { User } from "next-auth";

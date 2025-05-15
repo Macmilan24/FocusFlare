@@ -1,11 +1,10 @@
-// components/kid/kid-roadmap-view.tsx
 "use client";
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { RoadmapNode } from "@/actions/roadmap.actions"; // Adjust path if needed
+import { RoadmapNode } from "@/actions/roadmap.actions";
 import * as LucideIcons from "lucide-react";
-import { CheckCircle, Lock, Sparkles, Award, Footprints } from "lucide-react"; // Specific icons for status
+import { CheckCircle, Lock, Sparkles, Award, Footprints } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -28,7 +27,6 @@ export function KidRoadmapView({ initialNodes }: KidRoadmapViewProps) {
     );
   }
 
-  // Sort nodes by order, just in case they aren't already
   const nodes = [...initialNodes].sort((a, b) => a.order - b.order);
 
   return (
@@ -137,7 +135,6 @@ export function KidRoadmapView({ initialNodes }: KidRoadmapViewProps) {
               {/* Connecting line to next node (path) */}
               {index < nodes.length - 1 && (
                 <div className="w-12 sm:w-16 h-1 bg-orange-300/70 dark:bg-yellow-700/70 relative mx-1">
-                  {/* Optional: footprints or dots on the path */}
                   <Footprints className="absolute -top-3 left-1/2 -translate-x-1/2 h-5 w-5 text-orange-400/80 dark:text-yellow-600/80 transform -rotate-45" />
                 </div>
               )}

@@ -12,26 +12,48 @@ export interface ContentCardItem {
   coverImageUrl?: string | null;
   contentType: ContentType;
   subject: string;
-  // Add courseTitle if it's part of a course for display
   courseTitle?: string | null;
-  // For "Continue Learning"
-  progressPercentage?: number; // e.g. 50 for 50%
+  progressPercentage?: number;
   lastAccessed?: Date;
 }
 
-// Fetch recommended content (simple version: latest published content)
+export interface CourseCardItem {
+  id: string;
+  title: string;
+  description?: string | null;
+  coverImageUrl?: string | null;
+  subject: string;
+  itemCount: number;
+}
+
+export interface CourseContentItemWithProgress
+  extends Omit<
+    ContentCardItem,
+    "progressPercentage" | "courseTitle" | "subject"
+  > {
+  orderInCourse: number | null;
+  status?: string | null;
+  score?: number | null;
+  link: string;
+}
+
+export interface CourseDetails {
+  id: string;
+  title: string;
+  description?: string | null;
+  subject: string;
+  coverImageUrl?: string | null;
+  items: CourseContentItemWithProgress[];
+}
+
 export async function getRecommendedContent(
   limit: number = 4
 ): Promise<ContentCardItem[]> {
   try {
     const items = await prisma.learningContent.findMany({
-      where: {
-        // In a real app, this would be more sophisticated or from a Course that is published
-        // For now, let's assume published content or just fetch recent ones
-      },
       orderBy: { createdAt: "desc" },
       take: limit,
-      include: { course: { select: { title: true } } }, // Include course title if content is part of a course
+      include: { course: { select: { title: true } } },
     });
     return items.map((item) => ({
       id: item.id,
@@ -48,7 +70,6 @@ export async function getRecommendedContent(
   }
 }
 
-// Fetch "Continue Learning" items for the logged-in child
 export async function getContinueLearningContent(
   limit: number = 4
 ): Promise<ContentCardItem[]> {
@@ -60,7 +81,7 @@ export async function getContinueLearningContent(
     const progressItems = await prisma.userLearningProgress.findMany({
       where: {
         userId: userId,
-        NOT: { status: "completed" }, // Or "passed" for quizzes if that's your completion criteria
+        NOT: { status: "completed" },
       },
       orderBy: { lastAccessed: "desc" },
       take: limit,
@@ -78,7 +99,6 @@ export async function getContinueLearningContent(
       contentType: p.content.contentType,
       subject: p.content.subject,
       courseTitle: p.content.course?.title,
-      // progressPercentage: p.progress, // If you store current page/step in UserLearningProgress.progress
       lastAccessed: p.lastAccessed,
     }));
   } catch (error) {
@@ -87,20 +107,16 @@ export async function getContinueLearningContent(
   }
 }
 
-// Fetch subjects/categories (can be dynamic from LearningContent or Course subjects)
 export interface SubjectCategory {
   name: string;
-  iconSlug: keyof typeof import("lucide-react"); // For display
-  itemCount?: number; // Optional count of items in this subject
-  // coverImageUrl?: string; // Optional image for the subject card
+  iconSlug: keyof typeof import("lucide-react");
+  itemCount?: number;
 }
 export async function getSubjectCategories(): Promise<SubjectCategory[]> {
-  // For now, let's use a predefined list that matches your KidHomePage.
-  // Later, this could be dynamically generated from distinct subjects in Courses/LearningContent.
   return [
     {
       name: "Mathematics",
-      iconSlug: "Calculator" /* or your Puzzle icon */,
+      iconSlug: "Calculator",
       itemCount: await prisma.learningContent.count({
         where: { subject: "Mathematics" },
       }),
@@ -118,7 +134,7 @@ export async function getSubjectCategories(): Promise<SubjectCategory[]> {
       itemCount: await prisma.learningContent.count({
         where: { subject: "StoryTime" },
       }),
-    }, // If StoryTime is a subject
+    },
     {
       name: "QuizZone",
       iconSlug: "HelpCircle",
@@ -126,49 +142,31 @@ export async function getSubjectCategories(): Promise<SubjectCategory[]> {
         where: { subject: "QuizZone" },
       }),
     },
-    // Add more, ensure iconSlugs match Lucide names
   ];
 }
 
 export async function getLearningContentBySubject(
-  subjectNameQuery: string // e.g., "Mathematics", "StoryTime", "QuizZone"
+  subjectNameQuery: string
 ): Promise<ContentCardItem[]> {
-  // No session check needed here if content is public or if page calling it handles auth
-  // However, if subject content is restricted, add session check.
-
-  // Normalize subjectNameQuery if it comes from a slug (e.g., "story-time" -> "StoryTime")
-  // The page component should handle converting slug to the exact subject name stored in DB.
-  // For this action, we expect the *exact* subject name as stored.
-
   try {
     const items = await prisma.learningContent.findMany({
       where: {
         subject: subjectNameQuery,
-        // Optionally filter by other criteria like 'published: true'
       },
-      orderBy: [
-        // { orderInCourse: 'asc' }, // If you have an order field
-        { title: "asc" },
-      ],
+      orderBy: [{ title: "asc" }],
       select: {
-        // Select fields needed for ContentCardItem
         id: true,
         title: true,
         description: true,
         coverImageUrl: true,
         contentType: true,
         subject: true,
-        content: true, // Needed if coverImageUrl is nested in content for some items
-        // course: { select: { title: true } }, // If you want to show course title
+        content: true,
       },
-      // If 'coverImageUrl' is top-level on LearningContent, no need to select 'content' for it.
-      // If 'course' relation is needed for courseTitle, uncomment include/select.
     });
 
     return items.map((item) => {
-      // Extract coverImageUrl if it's nested in content for older items (legacy)
-      // If coverImageUrl is a direct field on LearningContent, this becomes simpler.
-      let coverImg = item.coverImageUrl; // Assumes coverImageUrl is a direct field now
+      let coverImg = item.coverImageUrl;
       if (
         !coverImg &&
         item.content &&
@@ -185,7 +183,6 @@ export async function getLearningContentBySubject(
         coverImageUrl: coverImg,
         contentType: item.contentType,
         subject: item.subject,
-        // courseTitle: item.course?.title,
       };
     });
   } catch (error) {
@@ -194,5 +191,123 @@ export async function getLearningContentBySubject(
       error
     );
     return [];
+  }
+}
+
+export async function getCoursesList(): Promise<{
+  courses?: CourseCardItem[];
+  error?: string;
+}> {
+  try {
+    const coursesFromDb = await prisma.course.findMany({
+      where: {
+        published: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        _count: {
+          select: { lessons: true },
+        },
+      },
+    });
+
+    if (!coursesFromDb) {
+      return { courses: [] };
+    }
+
+    const courses: CourseCardItem[] = coursesFromDb.map((course) => ({
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      coverImageUrl: course.coverImageUrl,
+      subject: course.subject,
+      itemCount: course._count.lessons,
+    }));
+
+    return { courses };
+  } catch (error) {
+    console.error("Error fetching courses list:", error);
+    return { error: "Failed to fetch learning adventures." };
+  }
+}
+
+export async function getCourseDetails(
+  courseId: string
+): Promise<{ courseDetails?: CourseDetails; error?: string }> {
+  const session = await auth();
+  if (!session?.user) return { error: "User not authenticated." };
+  const userId = session.user.id;
+
+  if (!courseId) return { error: "Course ID is required." };
+
+  try {
+    const course = await prisma.course.findUnique({
+      where: { id: courseId, published: true },
+      include: {
+        lessons: {
+          orderBy: { orderInCourse: "asc" },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            contentType: true,
+            coverImageUrl: true,
+            subject: true,
+            orderInCourse: true,
+            userProgress: {
+              where: { userId: userId },
+              select: {
+                status: true,
+                score: true,
+                progress: true,
+                lastAccessed: true,
+                completedAt: true,
+              },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+
+    if (!course) return { error: "Course not found or not published." };
+
+    const courseItems: CourseContentItemWithProgress[] = course.lessons.map(
+      (item) => {
+        const progress = item.userProgress[0];
+        let itemLink = "#";
+        if (item.contentType === ContentType.STORY)
+          itemLink = `/kid/stories/${item.id}`;
+        else if (item.contentType === ContentType.QUIZ)
+          itemLink = `/kid/quizzes/${item.id}`;
+        return {
+          id: item.id,
+          title: item.title,
+          link: itemLink,
+          description: item.description,
+          contentType: item.contentType,
+          coverImageUrl: item.coverImageUrl,
+          orderInCourse: item.orderInCourse,
+          status: progress?.status || "not_started",
+          score: progress?.score,
+        };
+      }
+    );
+
+    const courseDetails: CourseDetails = {
+      id: course.id,
+      title: course.title,
+      description: course.description,
+      subject: course.subject,
+      coverImageUrl: course.coverImageUrl,
+      items: courseItems,
+    };
+
+    return { courseDetails };
+  } catch (error) {
+    console.error(`Error fetching course details for ${courseId}:`, error);
+    return { error: "Failed to load course details." };
   }
 }

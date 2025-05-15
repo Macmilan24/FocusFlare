@@ -1,7 +1,6 @@
-// app/(platform)/kid/quizzes/page.tsx
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getQuizzesList, QuizListItem } from "@/actions/content.actions"; // Adjust path
+import { getQuizzesList } from "@/actions/content.actions"; // Adjust path
 import {
   Card,
   CardContent,
@@ -11,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
-import { HelpCircle, Puzzle } from "lucide-react"; // Example icons
+import { Puzzle } from "lucide-react"; // Example icons
 
 export default async function QuizzesListPage() {
   const session = await auth();
