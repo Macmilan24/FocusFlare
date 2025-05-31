@@ -9,14 +9,31 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import Image from "next/image"; // Keep for content cards
-import { Gem, Award, Edit3, Sparkles as SparkleIcon } from "lucide-react";
-import * as LucideIcons from "lucide-react";
+import Image from "next/image";
+// import { motion } from "framer-motion"; // Temporarily comment out
+import {
+  Gem,
+  Award,
+  Edit3,
+  Map,
+  Compass,
+  Rocket,
+  Target,
+  Footprints,
+  BookHeart,
+  Brain,
+  LibraryBig,
+  Calculator,
+  BookOpen,
+  Book,
+  HelpCircle,
+  Sparkles,
+} from "lucide-react";
 import {
   getRecommendedContent,
   getContinueLearningContent,
   getSubjectCategories,
-  ContentCardItem, // Ensure this includes coverImageUrl at top level
+  ContentCardItem,
 } from "@/actions/kid.actions";
 import { getEarnedBadgesForUser } from "@/actions/gamification.actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,81 +46,17 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ContentType } from "@prisma/client";
-function ContentDisplayCard({ item }: { item: ContentCardItem }) {
-  let linkHref = "#";
-  let IconType: LucideIcons.LucideIcon | null = null;
+import { ContentDisplayCard } from "@/components/kid/content-display-card";
+import { cn } from "@/lib/utils";
 
-  if (item.contentType === ContentType.STORY) {
-    linkHref = `/kid/stories/${item.id}`;
-    IconType = LucideIcons.BookHeart;
-  } else if (item.contentType === ContentType.QUIZ) {
-    linkHref = `/kid/quizzes/${item.id}`;
-    IconType = LucideIcons.Brain;
-  } else if (item.contentType === ContentType.LESSON) {
-    IconType = LucideIcons.ClipboardList;
-  } else if (item.contentType === ContentType.COURSE) {
-    IconType = LucideIcons.LibraryBig;
-  }
-
-  return (
-    <Link href={linkHref} passHref className="block group">
-      <Card className="h-full flex flex-col overflow-hidden shadow-lg hover:shadow-xl dark:hover:shadow-[hsl(var(--primary-kid))]/30 transition-all duration-300 ease-in-out transform hover:-translate-y-1.5 border-2 border-transparent hover:border-[hsl(var(--primary-kid))]/50 rounded-2xl bg-[hsl(var(--card-kid))] text-[hsl(var(--card-foreground-kid))]">
-        <div className="relative w-full h-36 sm:h-40">
-          {" "}
-          {/* Adjusted height for content cards */}
-          {item.coverImageUrl ? (
-            <Image
-              src={item.coverImageUrl}
-              alt={item.title}
-              layout="fill"
-              objectFit="cover"
-              className="group-hover:scale-105 transition-transform duration-300 rounded-t-xl"
-            />
-          ) : (
-            <div className="w-full h-full bg-[hsl(var(--muted-kid))] flex items-center justify-center rounded-t-xl">
-              {IconType ? (
-                <IconType className="h-12 w-12 text-[hsl(var(--muted-kid-foreground))]/50" />
-              ) : (
-                <SparkleIcon className="h-12 w-12 text-[hsl(var(--muted-kid-foreground))]/50" />
-              )}
-            </div>
-          )}
-          <Badge
-            variant="secondary"
-            className="absolute top-2 right-2 shadow capitalize bg-[hsl(var(--accent-kid))]/80 text-[hsl(var(--accent-kid-foreground))] text-xs px-2 py-0.5 backdrop-blur-sm"
-          >
-            {item.contentType.toLowerCase().replace("_", " ")}
-          </Badge>
-        </div>
-        <CardHeader className="pb-2 pt-3 px-3 sm:px-4">
-          {item.courseTitle && (
-            <p className="text-xs text-[hsl(var(--primary-kid))] font-semibold mb-0.5 line-clamp-1">
-              {item.courseTitle}
-            </p>
-          )}
-          <CardTitle className="text-sm sm:text-md font-bold leading-tight group-hover:text-[hsl(var(--primary-kid))] transition-colors line-clamp-2">
-            {item.title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-3 sm:px-4 pb-3 flex-grow">
-          {item.description && (
-            <p className="text-xs sm:text-sm text-[hsl(var(--muted-kid-foreground))] line-clamp-2 sm:line-clamp-3">
-              {item.description}
-            </p>
-          )}
-          {item.progressPercentage !== undefined && (
-            <div className="mt-2">
-              <Progress
-                value={item.progressPercentage}
-                className="h-1.5 bg-[hsl(var(--primary-kid))]/20 [&>div]:bg-[hsl(var(--primary-kid))]"
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
-  );
-}
+// Define a specific map for subject icons
+const subjectIconMap: Record<string, React.ElementType> = {
+  Calculator: Calculator,
+  BookOpen: BookOpen,
+  Book: Book,
+  HelpCircle: HelpCircle,
+  // Add other specific subject icons here if needed
+};
 
 export default async function KidHomePage() {
   const session = await auth();
@@ -121,10 +74,10 @@ export default async function KidHomePage() {
     getSubjectCategories(),
     getEarnedBadgesForUser(session.user.id),
   ]);
+
   const userPoints = session.user.points || 0;
   const childUser = session.user;
-  const earnedBadges = earnedBadgesData || []; // Ensure earnedBadges is an array
-
+  const earnedBadges = earnedBadgesData || [];
   const initials = (
     childUser.username?.substring(0, 1) ||
     childUser.name?.substring(0, 1) ||
@@ -132,138 +85,220 @@ export default async function KidHomePage() {
   ).toUpperCase();
 
   return (
-    <div className="kid-theme-content p-3 sm:p-4 md:p-6 space-y-10 md:space-y-12">
-      <section className="flex flex-col sm:flex-row items-center justify-between gap-4 md:gap-6 p-4 bg-[hsl(var(--card-kid))] rounded-2xl shadow-lg border border-[hsl(var(--border-kid))]">
-        <div className="flex items-center gap-3 sm:gap-4">
-          <Avatar className="h-14 w-14 sm:h-16 sm:w-16 border-2 border-[hsl(var(--primary-kid))]">
-            <AvatarImage src={childUser.image || undefined} />
-            <AvatarFallback className="text-xl sm:text-2xl bg-[hsl(var(--primary-kid))]/20 text-[hsl(var(--primary-kid))] font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold text-[hsl(var(--foreground-kid))]">
-              {childUser.username || childUser.name || "Hey Explorer!"}
-            </h1>
-            <Link
-              href="/kid/profile/edit"
-              className="text-xs text-[hsl(var(--primary-kid))] hover:underline flex items-center opacity-80 hover:opacity-100 transition-opacity"
-            >
-              <Edit3 className="h-3 w-3 mr-1" /> My Profile
-            </Link>
+    <div className="kid-theme-content space-y-8 md:space-y-10">
+      {/* Hero Section with Adventure Theme */}
+      <section className="relative rounded-3xl bg-gradient-to-br from-[hsl(var(--primary-kid))] via-[hsl(var(--secondary-kid))] to-[hsl(var(--accent-kid))] p-6 md:p-8 overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/patterns/topography.svg')] opacity-10" />
+        
+        <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          {/* User Welcome */}
+          <div className="flex items-center gap-4">
+            <Avatar className="h-16 w-16 md:h-20 md:w-20 ring-4 ring-white/20">
+              <AvatarImage src={childUser.image || undefined} />
+              <AvatarFallback className="text-2xl bg-white/10 text-white font-bold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="space-y-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-white">
+                Welcome back, {childUser.username || childUser.name || "Explorer"}!
+              </h1>
+              <Link
+                href="/kid/profile/edit"
+                className="inline-flex items-center text-white/80 hover:text-white text-sm transition-colors"
+              >
+                <Edit3 className="h-3.5 w-3.5 mr-1.5" />
+                Customize My Profile
+              </Link>
+            </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-3 sm:gap-4 text-sm">
-          <div className="flex items-center gap-1.5 p-2 px-3 rounded-lg bg-[hsl(var(--accent-kid))]/20 border border-[hsl(var(--accent-kid))]/50">
-            <Gem className="h-5 w-5 text-[hsl(var(--accent-kid))]" />
-            <span className="font-bold text-lg text-[hsl(var(--accent-kid))]">
-              {userPoints}
-            </span>
-            <span className="text-xs text-[hsl(var(--accent-kid-foreground))] opacity-80">
-              Points
-            </span>
+          {/* Stats Cards */}
+          <div className="flex flex-wrap gap-3">
+            <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+              <CardContent className="flex items-center gap-3 p-3">
+                <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center">
+                  <Gem className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">{userPoints}</p>
+                  <p className="text-xs text-white/70">Total Points</p>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-white/10 border-white/20 backdrop-blur-sm">
+              <CardContent className="flex items-center gap-3 p-3">
+                <div className="h-12 w-12 rounded-full bg-white/10 flex items-center justify-center">
+                  <Award className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">{earnedBadges.length}</p>
+                  <p className="text-xs text-white/70">Badges Earned</p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-          {earnedBadges && earnedBadges.length > 0 && (
-            <TooltipProvider>
-              {" "}
-              <Tooltip>
-                {" "}
-                <TooltipTrigger asChild>
-                  <Link
-                    href="/kid/badges"
-                    className="flex items-center gap-1.5 p-2 px-3 rounded-lg bg-[hsl(var(--secondary-kid))]/20 border border-[hsl(var(--secondary-kid))]/50"
-                  >
-                    <Award className="h-5 w-5 text-[hsl(var(--secondary-kid))]" />
-                    <span className="font-bold text-lg text-[hsl(var(--secondary-kid))]">
-                      {earnedBadges.length}
-                    </span>
-                    <span className="text-xs text-[hsl(var(--secondary-kid-foreground))] opacity-80">
-                      Badges
-                    </span>
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>View your badges!</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
         </div>
       </section>
+
+      {/* AI Roadmap Preview */}
+      <section>
+        <Card className="relative overflow-hidden border-2 border-[hsl(var(--primary-kid))] shadow-lg">
+          <div className="absolute inset-0 bg-[url('/patterns/compass-rose.svg')] opacity-5" />
+          <CardContent className="relative p-6 md:p-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Map className="h-8 w-8 text-[hsl(var(--primary-kid))]" />
+                  <h2 className="text-2xl font-bold">Your Next Adventure!</h2>
+                </div>
+                <p className="text-[hsl(var(--muted-kid-foreground))] max-w-md">
+                  Follow your personalized learning path and discover exciting new challenges!
+                </p>
+              </div>
+              <Link href="/kid/roadmap">
+                <Button size="lg" className="gap-2">
+                  <Compass className="h-5 w-5" />
+                  View My Learning Map
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Continue Learning Section */}
       {continueLearning && continueLearning.length > 0 && (
-        <section>
-          <h2 className="text-xl md:text-2xl font-bold mb-4 text-[hsl(var(--foreground-kid))]">
-            Keep Going... <span className="text-lg">🚀</span>
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 sm:gap-x-6 gap-y-6">
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Rocket className="h-6 w-6 text-[hsl(var(--primary-kid))]" />
+              <h2 className="text-xl font-bold">Keep Going...</h2>
+            </div>
+            <Link href="/kid/courses">
+              <Button variant="ghost" className="gap-2">
+                View All
+                <Footprints className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {continueLearning.map((item) => (
               <ContentDisplayCard key={`continue-${item.id}`} item={item} />
             ))}
           </div>
         </section>
       )}
-      {/* Recommended For You Section */}
+
+      {/* Recommended Section */}
       {recommended && recommended.length > 0 && (
-        <section>
-          <h2 className="text-xl md:text-2xl font-bold mb-4 text-[hsl(var(--foreground-kid))]">
-            Just For You ✨
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-6">
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Target className="h-6 w-6 text-[hsl(var(--secondary-kid))]" />
+              <h2 className="text-xl font-bold">Just For You</h2>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {recommended.map((item) => (
               <ContentDisplayCard key={`reco-${item.id}`} item={item} />
             ))}
           </div>
         </section>
       )}
-      {/* Explore by Subject Section */}
-      <section>
-        <h2 className="text-xl md:text-2xl font-bold mb-4 text-[hsl(var(--foreground-kid))]">
-          Explore Subjects
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 md:gap-5">
-          {subjects.map((subject) => {
+
+      {/* Explore Subjects Section */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-6 w-6 text-[hsl(var(--accent-kid))]" />
+          <h2 className="text-xl font-bold">Explore Adventure Worlds</h2>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {subjects.map((subject, index) => {
+            const SpecificIcon = subject.iconSlug ? subjectIconMap[subject.iconSlug] : undefined;
+            const IconComponent = SpecificIcon || Sparkles;
+
             return (
               <Link
-                href={`/kid/subject/${subject.name
-                  .toLowerCase()
-                  .replace(/\s+/g, "-")}`}
+                href={`/kid/subject/${subject.name.toLowerCase().replace(/\s+/g, "-")}`}
                 key={subject.name}
                 className="group block"
               >
-                <Card className="text-center p-3 sm:p-4 aspect-[4/3] sm:aspect-square flex flex-col items-center justify-center rounded-2xl shadow-md hover:shadow-xl dark:hover:shadow-[hsl(var(--primary-kid))]/30 bg-[hsl(var(--card-kid))] hover:border-[hsl(var(--primary-kid))] dark:hover:border-[hsl(var(--primary-kid))] transition-all transform hover:scale-105 border-2 border-transparent">
-                  <LucideIcons.HelpCircle className="h-8 w-8 sm:h-10 sm:w-10 text-[hsl(var(--primary-kid))] mb-1 sm:mb-2 transition-transform group-hover:scale-110" />
-                  <p className="font-semibold text-xs sm:text-sm text-[hsl(var(--card-foreground-kid))] group-hover:text-[hsl(var(--primary-kid))] transition-colors">
-                    {subject.name}
-                  </p>
-                  {subject.itemCount !== undefined && (
-                    <p className="text-[10px] sm:text-xs text-[hsl(var(--muted-kid-foreground))]">
-                      {subject.itemCount} activities
-                    </p>
-                  )}
-                </Card>
+                {/* <motion.div  // Temporarily remove motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                > */}
+                  <Card className={cn(
+                    "relative overflow-hidden aspect-square p-4",
+                    "flex flex-col items-center justify-center text-center",
+                    "border-2 border-transparent",
+                    "transition-all duration-300 group-hover:scale-105", // Keep hover effects
+                    "group-hover:border-[hsl(var(--primary-kid))]",
+                    "group-hover:shadow-lg"
+                  )}>
+                    <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--primary-kid))]/5 to-[hsl(var(--accent-kid))]/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <IconComponent className="h-12 w-12 mb-3 text-[hsl(var(--muted-kid-foreground))] group-hover:text-[hsl(var(--primary-kid))] transition-colors" />
+                    <CardTitle className="text-sm font-bold mb-1 group-hover:text-[hsl(var(--primary-kid))] transition-colors">
+                      {subject.name}
+                    </CardTitle>
+                    {subject.itemCount !== undefined && (
+                      <p className="text-xs text-[hsl(var(--muted-kid-foreground))]">
+                        {subject.itemCount} activities
+                      </p>
+                    )}
+                  </Card>
+                {/* </motion.div> */}
               </Link>
             );
           })}
         </div>
       </section>
-      {/* AI Roadmap Placeholder */}
-      <section>
-        <Card className="p-6 md:p-8 bg-gradient-to-r from-[hsl(var(--secondary-kid))] via-[hsl(var(--primary-kid))] to-[hsl(var(--accent-kid))] rounded-2xl shadow-xl text-center">
-          <CardTitle className="text-2xl md:text-3xl font-bold mb-3 text-white">
-            Your Personal Learning Path!
-          </CardTitle>
-          <CardDescription className="text-lg text-white/80 mb-6">
-            AI will help guide your adventure, coming very soon!
-          </CardDescription>
-          <Button
-            size="lg"
-            variant="outline"
-            className="bg-white/20 hover:bg-white/30 border-white/50 text-white font-semibold shadow-md text-md px-6 py-3"
-          >
-            What&apos;s Next? (AI Roadmap)
-          </Button>
-        </Card>
+
+      {/* Quick Access Section */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Link href="/kid/stories">
+          <Card className="group hover:border-[hsl(var(--primary-kid))] transition-all hover:shadow-lg">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-[hsl(var(--primary-kid))]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <BookHeart className="h-6 w-6 text-[hsl(var(--primary-kid))]" />
+              </div>
+              <div>
+                <h3 className="font-bold mb-1 group-hover:text-[hsl(var(--primary-kid))] transition-colors">Stories</h3>
+                <p className="text-sm text-[hsl(var(--muted-kid-foreground))]">Discover amazing tales</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/kid/quizzes">
+          <Card className="group hover:border-[hsl(var(--secondary-kid))] transition-all hover:shadow-lg">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-[hsl(var(--secondary-kid))]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Brain className="h-6 w-6 text-[hsl(var(--secondary-kid))]" />
+              </div>
+              <div>
+                <h3 className="font-bold mb-1 group-hover:text-[hsl(var(--secondary-kid))] transition-colors">Quizzes</h3>
+                <p className="text-sm text-[hsl(var(--muted-kid-foreground))]">Test your knowledge</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/kid/courses">
+          <Card className="group hover:border-[hsl(var(--accent-kid))] transition-all hover:shadow-lg">
+            <CardContent className="p-6 flex items-center gap-4">
+              <div className="h-12 w-12 rounded-full bg-[hsl(var(--accent-kid))]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <LibraryBig className="h-6 w-6 text-[hsl(var(--accent-kid))]" />
+              </div>
+              <div>
+                <h3 className="font-bold mb-1 group-hover:text-[hsl(var(--accent-kid))] transition-colors">Adventures</h3>
+                <p className="text-sm text-[hsl(var(--muted-kid-foreground))]">Start a learning journey</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </section>
     </div>
   );

@@ -40,8 +40,9 @@ export function ContentDisplayCard({ item }: ContentDisplayCardProps) {
             <Image
               src={item.coverImageUrl}
               alt={item.title}
-              layout="fill"
-              objectFit="cover"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              style={{ objectFit: "cover" }}
               className="group-hover:scale-105 transition-transform duration-300 rounded-t-xl"
             />
           ) : (

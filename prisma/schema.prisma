@@ -52,6 +52,7 @@ model VerificationToken {
 enum Role {
   PARENT
   CHILD
+  ADMIN
 }
 
 model User {
@@ -63,11 +64,11 @@ model User {
   password        String?
   image           String?
   role            Role      @default(PARENT)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
   points          Int       @default(0)
   avatarUrl       String?
   favoriteSubject String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   accounts Account[]
   sessions Session[]
@@ -102,11 +103,13 @@ model LearningContent {
   title         String
   description   String?
   contentType   ContentType
-  subject       String // Can still be useful for individual items not in a course
+  subject       String
   content       Json
   coverImageUrl String?
-  courseId      String?     @db.ObjectId
-  course        Course?     @relation("CourseLessons", fields: [courseId], references: [id], onDelete: SetNull)
+  published     Boolean     @default(false)
+
+  courseId      String? @db.ObjectId
+  course        Course? @relation("CourseLessons", fields: [courseId], references: [id], onDelete: SetNull)
   orderInCourse Int?
 
   createdAt    DateTime               @default(now())
@@ -165,15 +168,34 @@ model UserBadge {
   @@index([badgeId])
 }
 
+model GradeLevel {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  name        String  @unique
+  description String?
+  order       Int     @unique // For sorting: 1, 2, 3... Ensures logical display order
+
+  courses Course[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("grade_levels") // Explicit collection name in MongoDB
+}
+
 model Course {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  title         String   @unique
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  title         String      @unique
   description   String?
   subject       String // e.g., "Math", "Reading"
   coverImageUrl String?
-  published     Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  published     Boolean     @default(false)
+  gradeLevelId  String?     @db.ObjectId // Foreign key to GradeLevel
+  gradeLevel    GradeLevel? @relation(fields: [gradeLevelId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   lessons LearningContent[] @relation("CourseLessons")
+
+  @@map("courses")
 }

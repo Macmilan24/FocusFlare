@@ -29,17 +29,82 @@ async function main() {
       iconSlug: "Brain",
       criteriaText: "Pass 3 quizzes",
     },
+    // Add more diverse icons
+    {
+      name: "Math Magician",
+      description: "Solved 5 math activities!",
+      iconSlug: "Sigma",
+      criteriaText: "Complete 5 math tasks",
+    },
+    {
+      name: "Creative Spark",
+      description: "Explored your artistic side!",
+      iconSlug: "Palette",
+      criteriaText: "Complete 1 art activity",
+    },
   ];
   for (const badgeData of badgesToSeed) {
     await prisma.badge.upsert({
-      where: { name: badgeData.name },
-      update: badgeData,
+      where: { name: badgeData.name }, // Assumes badge name is unique
+      update: {
+        description: badgeData.description,
+        iconSlug: badgeData.iconSlug,
+        criteriaText: badgeData.criteriaText,
+      }, // Ensure all fields are updated if they can change
       create: badgeData,
     });
     console.log(`Created/updated badge: ${badgeData.name}`);
   }
 
   console.log(`Seeding finished.`);
+
+  const gradeLevelsToSeed = [
+    {
+      name: "Grade 1",
+      description: "Foundation learning for young explorers.",
+      order: 1,
+    },
+    {
+      name: "Grade 2",
+      description: "Building on the basics with more fun!",
+      order: 2,
+    },
+    {
+      name: "Grade 3",
+      description: "Expanding knowledge and skills.",
+      order: 3,
+    },
+    {
+      name: "Grade 4",
+      description: "Deeper dives into interesting subjects.",
+      order: 4,
+    },
+    {
+      name: "Grade 5",
+      description: "Challenging new concepts and adventures.",
+      order: 5,
+    },
+    {
+      name: "Grade 6",
+      description: "Preparing for more advanced learning.",
+      order: 6,
+    },
+    // Add "Kindergarten" or other levels if needed, adjust order accordingly
+  ];
+
+  const createdGradeLevelsMap = new Map<string, string>(); // Map: grade name -> generated grade ID
+
+  for (const gradeData of gradeLevelsToSeed) {
+    const grade = await prisma.gradeLevel.upsert({
+      where: { name: gradeData.name }, // Upsert based on unique name
+      update: { description: gradeData.description, order: gradeData.order },
+      create: gradeData,
+    });
+    createdGradeLevelsMap.set(grade.name, grade.id);
+    console.log(
+      `Created/updated grade level: ${grade.name} (Order: ${grade.order})`
+    );
+  }
 
   // --- Seed Learning Content (Stories) ---
 
@@ -51,6 +116,7 @@ async function main() {
       subject: "Mathematics",
       coverImageUrl: "/images/courses/math_adventure_cover.png",
       published: true,
+      gradeLevelNameToLink: "Grade 1",
     },
     {
       title: "Cosmic Story Quest",
@@ -59,28 +125,35 @@ async function main() {
       subject: "StoryTime",
       coverImageUrl: "/images/courses/cosmic_stories_cover.png",
       published: true,
+      gradeLevelNameToLink: "Grade 1",
     },
   ];
 
   const createdCoursesMap = new Map<string, string>(); // Map: course title -> generated course ID
 
   for (const courseData of coursesInputData) {
+    const { gradeLevelNameToLink, ...courseCreateData } = courseData;
+    let gradeLevelIdToSet: string | undefined = undefined; // Important: can be undefined if grade not found
+
+    if (gradeLevelNameToLink) {
+      gradeLevelIdToSet = createdGradeLevelsMap.get(gradeLevelNameToLink);
+      if (!gradeLevelIdToSet) {
+        console.warn(
+          `WARNING: GradeLevel "${gradeLevelNameToLink}" not found for course "${courseData.title}". Course will not be linked to a grade.`
+        );
+      }
+    }
+
     const course = await prisma.course.upsert({
       where: { title: courseData.title }, // Upsert based on unique title
       update: {
-        // Fields to update if course already exists
-        description: courseData.description,
-        subject: courseData.subject,
-        coverImageUrl: courseData.coverImageUrl,
-        published: courseData.published,
+        ...courseCreateData,
+        gradeLevelId: gradeLevelIdToSet,
       },
       create: {
         // Fields for creating a new course (ID will be auto-generated)
-        title: courseData.title,
-        description: courseData.description,
-        subject: courseData.subject,
-        coverImageUrl: courseData.coverImageUrl,
-        published: courseData.published,
+        ...courseCreateData,
+        gradeLevelId: gradeLevelIdToSet,
       },
     });
     createdCoursesMap.set(course.title, course.id); // Store title and its new ID
