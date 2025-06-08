@@ -39,10 +39,10 @@ export default async function StoriesListPage() {
   return (
     <div className="p-4 md:p-8">
       <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold tracking-tight">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
           Story Time Adventures
         </h1>
-        <p className="mt-3 text-xl text-gray-600 dark:text-gray-400">
+        <p className="mt-3 text-lg sm:text-xl text-gray-600 dark:text-gray-400">
           Pick a story and let your imagination soar!
         </p>
       </div>

@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { handleSignOut } from "@/actions/auth.actions";
+import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { LogOut, UserCircle, Gem, Award, Zap } from "lucide-react";
 import type { User } from "next-auth";
@@ -31,30 +31,27 @@ export function KidUserNav({ user }: KidUserNavProps) {
     "K"
   ).toUpperCase();
 
-  const onSignOut = async () => {
-    await handleSignOut();
-  };
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-10 w-10 sm:h-11 sm:w-11 rounded-full focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring-kid))]"
+          className="relative h-10 w-10 sm:h-11 sm:w-11 rounded-full aspect-square p-0 focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring-kid))]"
         >
-          <Avatar className="h-full w-full border-2 border-[hsl(var(--primary-kid))] shadow-md">
+          <Avatar className="h-full w-full aspect-square rounded-full overflow-hidden border-2 border-[hsl(var(--primary-kid))] bg-white">
             <AvatarImage
               src={user.image || undefined}
               alt={user.username || user.name || "User"}
+              className="object-cover h-full w-full rounded-full"
             />
-            <AvatarFallback className="bg-[hsl(var(--primary-kid))]/20 text-[hsl(var(--primary-kid))] font-bold text-lg">
+            <AvatarFallback className="bg-[hsl(var(--primary-kid))]/20 text-[hsl(var(--primary-kid))] font-bold text-lg rounded-full">
               {initials}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-60 bg-[hsl(var(--popover-kid))] text-[hsl(var(--popover-foreground-kid))] border-[hsl(var(--border-kid))]"
+        className="w-60 bg-white text-[hsl(var(--popover-foreground-kid))] border-[hsl(var(--border-kid))]"
         align="end"
         forceMount
       >
@@ -97,13 +94,16 @@ export function KidUserNav({ user }: KidUserNavProps) {
           </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator className="bg-[hsl(var(--border-kid))]" />
-        <DropdownMenuItem
-          onClick={onSignOut}
-          className="cursor-pointer text-red-500 dark:text-red-400 focus:bg-red-500/10 focus:text-red-500 dark:focus:text-red-300"
+        <Button
+          type="button"
+          className="w-full text-left p-0"
+          onClick={() => signOut({ callbackUrl: "/auth/signin" })}
         >
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Switch User / Sign Out</span>
-        </DropdownMenuItem>
+          <DropdownMenuItem className="cursor-pointer text-red-500 dark:text-red-400 focus:bg-red-500/10 focus:text-red-500 dark:focus:text-red-300">
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Switch User / Sign Out</span>
+          </DropdownMenuItem>
+        </Button>
       </DropdownMenuContent>
     </DropdownMenu>
   );

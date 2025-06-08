@@ -61,6 +61,28 @@ export interface QuizData {
   passingScorePercentage?: number | null;
 }
 
+export interface LessonBlock {
+  id: string;
+  type: "text" | "image" | "video";
+  content?: string; // for text
+  url?: string; // for image/video
+  alt?: string; // for image
+}
+
+export interface LessonSection {
+  id: string;
+  title: string;
+  blocks: LessonBlock[];
+}
+
+export interface LessonData {
+  id: string;
+  title: string;
+  description?: string | null;
+  sections: LessonSection[];
+  courseId?: string; // <-- Add this field for course linkage
+}
+
 export async function getStoriesList(): Promise<{
   stories?: StoryListItem[];
   error?: string;
@@ -427,5 +449,88 @@ export async function getQuizById(
   } catch (error) {
     console.error(`Error fetching quiz by ID (${quizId}):`, error);
     return { error: "Failed to fetch quiz details." };
+  }
+}
+
+export async function getLessonById(
+  lessonId: string
+): Promise<{ lesson?: LessonData; error?: string }> {
+  if (!lessonId) {
+    return { error: "Lesson ID is required." };
+  }
+
+  try {
+    const contentItem = await prisma.learningContent.findUnique({
+      where: {
+        id: lessonId,
+        contentType: ContentType.LESSON,
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        content: true,
+        courseId: true, // <-- Add this line
+      },
+    });
+
+    if (!contentItem) {
+      return { error: "Lesson not found or is not a lesson." };
+    }
+
+    let sections: LessonSection[] = [];
+
+    if (contentItem.content && typeof contentItem.content === "object") {
+      const contentJson = contentItem.content as any;
+
+      if ("sections" in contentJson && Array.isArray(contentJson.sections)) {
+        sections = contentJson.sections
+          .filter(
+            (s: any) =>
+              s &&
+              typeof s.id === "string" &&
+              typeof s.title === "string" &&
+              Array.isArray(s.blocks)
+          )
+          .map((s: any) => ({
+            id: s.id,
+            title: s.title,
+            blocks: s.blocks
+              .filter(
+                (b: any) =>
+                  b &&
+                  typeof b.id === "string" &&
+                  ["text", "image", "video"].includes(b.type)
+              )
+              .map((b: any) => ({
+                id: b.id,
+                type: b.type,
+                content: b.content,
+                url: b.url,
+                alt: b.alt,
+              })),
+          }));
+      }
+    }
+
+    if (sections.length === 0) {
+      console.warn(
+        `Lesson ${contentItem.id} has missing or malformed section content.`
+      );
+      return { error: "Lesson content is invalid or missing sections." };
+    }
+
+    const lesson: LessonData = {
+      id: contentItem.id,
+      title: contentItem.title,
+      description: contentItem.description,
+      sections: sections,
+      courseId: contentItem.courseId, // <-- Add this line
+    };
+
+    return { lesson };
+  } catch (error) {
+    console.error(`Error fetching lesson by ID (${lessonId}):`, error);
+    return { error: "Failed to fetch lesson details." };
   }
 }

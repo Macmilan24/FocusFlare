@@ -2,19 +2,14 @@
 
 import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
-import { registerParent, RegisterFormState } from "@/actions/auth.actions"; // Adjust path
+import Link from "next/link";
+import { registerParent, RegisterFormState } from "@/actions/auth.actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import Link from "next/link";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 const initialState: RegisterFormState = {
@@ -28,11 +23,10 @@ function RegisterButton() {
   return (
     <Button
       type="submit"
-      className="w-full"
-      aria-disabled={pending}
       disabled={pending}
+      className="w-full h-12 text-base font-medium bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 disabled:opacity-50"
     >
-      {pending ? "Registering..." : "Create Account"}
+      {pending ? "Creating Account..." : "Join Focus Flare! 🎉"}
     </Button>
   );
 }
@@ -42,71 +36,112 @@ export default function RegisterPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (state.success) {
-      // Optionally, redirect to sign-in after a short delay or display message longer
-      // For now, we'll rely on the message.
-      // setTimeout(() => {
-      //   router.push('/auth/signin');
-      // }, 2000); // Example delay
+    if (state?.message) {
+      if (state.isError) {
+        toast.error(state.message);
+      } else if (state.success) {
+        toast.success(state.message);
+        router.push("/auth/signin");
+      }
     }
-  }, [state.success, router]);
+  }, [state, router]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl">Create Parent Account</CardTitle>
-          <CardDescription>
-            Enter your email and password to get started.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form action={formAction} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="parent@example.com"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="passwordConfirm">Confirm Password</Label>
-              <Input
-                id="passwordConfirm"
-                name="passwordConfirm"
-                type="password"
-                required
-              />
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-yellow-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <Link href="/" className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">
+            🔥 Focus Flare
+          </Link>
+          <p className="text-muted-foreground mt-2">Join the learning adventure! 🌟</p>
+        </div>
+
+        <Card className="shadow-lg border-2 border-orange-100">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-foreground">Create Your Account!</CardTitle>
+            <CardDescription className="text-base">
+              Let's start your amazing learning journey together! 🚀
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <OAuthButtons isSignUp={true} />
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                  Or create account with email
+                </span>
+              </div>
             </div>
 
-            {state?.message && (
-              <p
-                className={`text-sm ${
-                  state.isError ? "text-red-500" : "text-green-500"
-                }`}
-              >
-                {state.message}
+            <form action={formAction} className="space-y-4">
+               <div className="space-y-2">
+                <Label htmlFor="name" className="text-base font-medium">Full Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  placeholder="Your awesome name"
+                  className="h-12 text-base border-2 focus:border-orange-400"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-base font-medium">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="your.email@example.com"
+                  className="h-12 text-base border-2 focus:border-orange-400"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-base font-medium">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Create a strong password"
+                  className="h-12 text-base border-2 focus:border-orange-400"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="passwordConfirm" className="text-base font-medium">Confirm Password</Label>
+                <Input
+                  id="passwordConfirm"
+                  name="passwordConfirm"
+                  type="password"
+                  placeholder="Type your password again"
+                  className="h-12 text-base border-2 focus:border-orange-400"
+                  required
+                />
+              </div>
+
+              {/* The user didn't provide a checkbox, so I am omitting it. The original form did not have it either. */}
+
+              <RegisterButton />
+            </form>
+
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                Already have an account?{" "}
+                <Link href="/auth/signin" className="text-orange-600 hover:text-orange-700 font-medium">
+                  Login here! 🔐
+                </Link>
               </p>
-            )}
-            <RegisterButton />
-          </form>
-        </CardContent>
-        <CardFooter className="flex flex-col items-center space-y-2">
-          <p className="text-xs text-muted-foreground">
-            Already have an account?{" "}
-            <Link href="/auth/signin" className="underline hover:text-primary">
-              Sign In
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
-}
+};

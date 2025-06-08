@@ -7,6 +7,7 @@ import {
   getEarnedBadgesForUser,
   EarnedBadge as GamificationEarnedBadge,
 } from "./gamification.actions";
+import { revalidatePath } from "next/cache";
 
 // Interface for individual progress items (can be a story or quiz)
 export interface ProgressItemSummary {
@@ -326,5 +327,97 @@ export async function getChildProgressDetailsForReport(
       error
     );
     return { error: "Failed to load child's report." };
+  }
+}
+
+const POINTS_FOR_COMPLETING_LESSON = 25;
+
+export async function updateLessonBlockProgress(
+  lessonId: string,
+  blockId: string
+) {
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  if (!userId) return { error: "User not authenticated." };
+
+  try {
+    const progress = await prisma.userLearningProgress.upsert({
+      where: { userId_contentId: { userId, contentId: lessonId } },
+      create: {
+        userId,
+        contentId: lessonId,
+        status: "inprogress",
+        completedBlocks: [blockId],
+      },
+      update: {
+        status: "inprogress",
+        completedBlocks: { push: blockId }, // Add the new blockId to the array
+        lastAccessed: new Date(),
+      },
+    });
+
+    // This part is crucial to prevent duplicate block IDs in the array
+    const uniqueBlocks = Array.from(
+      new Set(progress.completedBlocks as string[])
+    );
+    await prisma.userLearningProgress.update({
+      where: { id: progress.id },
+      data: { completedBlocks: uniqueBlocks },
+    });
+
+    return { success: true, completedBlocks: uniqueBlocks };
+  } catch (error) {
+    console.error("Error updating block progress:", error);
+    return { error: "Could not save block progress." };
+  }
+}
+
+/**
+ * Marks an entire lesson as complete and awards points.
+ * This should be called when the user completes the final block.
+ */
+export async function completeLesson(lessonId: string) {
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  if (!userId) return { error: "User not authenticated." };
+
+  try {
+    // Use a transaction to ensure both updates happen together
+    const [updatedUser, updatedProgress] = await prisma.$transaction([
+      // 1. Award points to the user
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          points: {
+            increment: POINTS_FOR_COMPLETING_LESSON,
+          },
+        },
+      }),
+      // 2. Mark the lesson progress as 'completed'
+      prisma.userLearningProgress.update({
+        where: { userId_contentId: { userId, contentId: lessonId } },
+        data: {
+          status: "completed",
+          completedAt: new Date(),
+        },
+      }),
+    ]);
+
+    // TODO: Add badge-awarding logic here if you have one for lessons
+    // e.g., await checkAndAwardLessonBadges(userId);
+
+    revalidatePath(`/kid/lessons/${lessonId}`);
+    revalidatePath(`/kid/home`); // Revalidate home to show new points total
+
+    return {
+      success: true,
+      message: `Lesson complete! You earned ${POINTS_FOR_COMPLETING_LESSON} points!`,
+      newTotalPoints: updatedUser.points,
+    };
+  } catch (error) {
+    console.error("Error completing lesson:", error);
+    return { error: "Could not complete the lesson or award points." };
   }
 }

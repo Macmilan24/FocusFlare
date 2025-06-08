@@ -9,7 +9,7 @@ export default async function KidBadgesPage() {
     <div className="space-y-6">
       <div className="text-center">
         <Award className="h-16 w-16 mx-auto text-[hsl(var(--accent-kid))] mb-2" />
-        <h1 className="text-3xl font-bold text-[hsl(var(--foreground-kid))]">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[hsl(var(--foreground-kid))]">
           My Awesome Badges!
         </h1>
         <p className="text-[hsl(var(--muted-kid-foreground))]">

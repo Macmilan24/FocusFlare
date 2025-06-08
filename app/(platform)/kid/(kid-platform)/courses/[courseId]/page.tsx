@@ -1,276 +1,311 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getCourseDetails } from "@/actions/kid.actions"; // Adjust path
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
+import { getCourseDetails } from "@/actions/kid.actions";
 import {
   ArrowLeft,
-  CheckCircle,
-  PlayCircle,
+  CheckCircle2,
   Lock,
-  BarChartHorizontalBig,
-} from "lucide-react"; // More icons
-import { Badge } from "@/components/ui/badge";
+  PlayCircle,
+  RefreshCw,
+  Sparkles,
+  Trophy,
+  BookHeart,
+  Puzzle,
+  ClipboardList,
+  Gamepad2,
+  FileText,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { ContentType } from "@prisma/client";
-import * as LucideIcons from "lucide-react";
+import { type LucideIcon } from "lucide-react";
 
-interface CourseDetailPageProps {
-  params: { courseId: string };
-}
-
-// Helper to get content type icon
-const getContentTypeIcon = (contentType: ContentType) => {
+// Helper to get content type icon, moved inside the component for clarity
+const getContentTypeIcon = (contentType: ContentType): LucideIcon => {
   switch (contentType) {
     case ContentType.STORY:
-      return LucideIcons.BookHeart;
+      return BookHeart;
     case ContentType.QUIZ:
-      return LucideIcons.Puzzle;
+      return Puzzle;
     case ContentType.LESSON:
-      return LucideIcons.ClipboardList;
+      return ClipboardList;
     case ContentType.GAME:
-      return LucideIcons.Gamepad2;
+      return Gamepad2;
     default:
-      return LucideIcons.FileText;
+      return FileText;
   }
 };
 
-export default async function CourseDetailPage({
+type StepStatus = "completed" | "current" | "locked";
+
+const getStepStatusStyles = (status: StepStatus) => {
+  switch (status) {
+    case "completed":
+      return {
+        iconBg: "bg-green-500",
+        iconColor: "text-white",
+        textColor: "text-slate-600",
+        lineColor: "bg-green-500",
+        wrapperClass: "opacity-80",
+      };
+    case "current":
+      return {
+        iconBg: "bg-cyan-500 animate-pulse",
+        iconColor: "text-white",
+        textColor: "text-slate-800 font-semibold",
+        lineColor: "bg-cyan-500",
+        wrapperClass:
+          "border-2 border-cyan-400 rounded-2xl shadow-lg bg-cyan-50/50 p-4",
+      };
+    case "locked":
+      return {
+        iconBg: "bg-slate-300",
+        iconColor: "text-slate-500",
+        textColor: "text-slate-400",
+        lineColor: "bg-slate-300",
+        wrapperClass: "opacity-60 cursor-not-allowed",
+      };
+  }
+};
+
+const AdventureStep = ({
+  item,
+  isLast,
+  isCurrent,
+}: {
+  item: NonNullable<
+    NonNullable<
+      Awaited<ReturnType<typeof getCourseDetails>>["courseDetails"]
+    >["items"]
+  >[0];
+  isLast: boolean;
+  isCurrent: boolean;
+}) => {
+  const isCompleted = item.status === "completed" || item.status === "passed";
+  const status: StepStatus = isCompleted
+    ? "completed"
+    : isCurrent
+    ? "current"
+    : "locked";
+  const styles = getStepStatusStyles(status);
+  const IconComponent = getContentTypeIcon(item.contentType);
+
+  const StepContent = (
+    <div
+      className={`relative flex items-start gap-4 pb-8 ${styles.wrapperClass}`}
+    >
+      {!isLast && (
+        <div
+          className={`absolute left-6 top-12 w-0.5 h-full ${styles.lineColor} -translate-x-1/2`}
+        />
+      )}
+      <div
+        className={`relative z-10 flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-full ${styles.iconBg}`}
+      >
+        {status === "completed" ? (
+          <CheckCircle2 className={`h-6 w-6 ${styles.iconColor}`} />
+        ) : status === "locked" ? (
+          <Lock className={`h-5 w-5 ${styles.iconColor}`} />
+        ) : (
+          <IconComponent className={`h-6 w-6 ${styles.iconColor}`} />
+        )}
+      </div>
+      <div className="flex-1 min-w-0 pt-2">
+        <h3 className={`text-lg font-bold ${styles.textColor}`}>
+          {item.title}
+        </h3>
+        <div className="flex items-center gap-4 text-sm mt-1">
+          <Badge variant="outline" className="text-xs">
+            {item.contentType.toLowerCase()}
+          </Badge>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <li>
+      {status !== "locked" ? (
+        <Link href={item.link} className="block">
+          {StepContent}
+        </Link>
+      ) : (
+        <div title="Complete previous steps to unlock">{StepContent}</div>
+      )}
+    </li>
+  );
+};
+
+export default async function NewCourseDetailPage({
   params,
-}: CourseDetailPageProps) {
+}: {
+  params: { courseId: string };
+}) {
   const session = await auth();
   if (!session?.user) redirect("/auth/signin");
 
-  const { courseId } = params;
-  const { courseDetails, error } = await getCourseDetails(courseId);
+  const { courseDetails, error } = await getCourseDetails(params.courseId);
 
   if (error || !courseDetails) {
     return (
-      <div className="p-6 md:p-8 text-center space-y-4">
-        <Button
-          asChild
-          variant="outline"
-          size="sm"
-          className="mb-4 mr-auto block w-fit"
-        >
-          <Link href="/kid/courses">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Adventures
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-bold text-red-500 mt-4">
-          Error Loading Adventure
-        </h1>
-        <p className="text-[hsl(var(--muted-kid-foreground))]">
-          {error || "Could not load details for this learning adventure."}
+      <div className="p-8 text-center">
+        <p className="text-red-500">
+          {error || "Could not find this adventure."}
         </p>
+        <Button asChild variant="link" className="mt-4">
+          <Link href="/kid/courses">Back to Adventures</Link>
+        </Button>
       </div>
     );
   }
 
   const { title, description, subject, coverImageUrl, items } = courseDetails;
-  const totalItems = items.length;
-  const completedItems = items.filter(
-    (item) => item.status === "completed" || item.status === "passed"
+  const completedItemsCount = items.filter(
+    (i) => i.status === "completed" || i.status === "passed"
   ).length;
-  const courseProgressPercentage =
-    totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+  const progressPercentage =
+    items.length > 0
+      ? Math.round((completedItemsCount / items.length) * 100)
+      : 0;
+  const isCompleted = completedItemsCount === items.length;
+
+  let currentStepIndex = items.findIndex(
+    (item) => item.status !== "completed" && item.status !== "passed"
+  );
+  if (currentStepIndex === -1 && items.length > 0) currentStepIndex = 0; // If all are done, point to first for review
+  const continueLink =
+    items[currentStepIndex]?.link || (items.length > 0 ? items[0].link : "#");
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-8">
-      <div className="mb-2">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="text-[hsl(var(--muted-kid-foreground))] hover:text-[hsl(var(--primary-kid))] -ml-2"
-        >
-          <Link href="/kid/courses">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to All Adventures
-          </Link>
-        </Button>
-      </div>
-
-      {/* Course Header Section */}
-      <Card className="overflow-hidden shadow-xl border-2 border-[hsl(var(--primary-kid))]/30 bg-gradient-to-b from-[hsl(var(--card-kid))] to-[hsl(var(--muted-kid))]/30">
-        <div className="grid md:grid-cols-3">
-          {coverImageUrl && (
-            <div className="md:col-span-1 relative min-h-[200px] md:min-h-full">
-              <Image
-                src={coverImageUrl}
-                alt={title}
-                layout="fill"
-                objectFit="cover"
-              />
-            </div>
-          )}
-          <div
-            className={`p-6 md:p-8 ${
-              coverImageUrl ? "md:col-span-2" : "md:col-span-3"
-            }`}
-          >
-            <Badge
-              variant="secondary"
-              className="mb-2 bg-[hsl(var(--accent-kid))]/80 text-[hsl(var(--accent-kid-foreground))]"
+    <div
+      className="min-h-screen bg-gradient-to-br from-sky-50 via-cyan-50 to-emerald-50"
+      style={{ fontFamily: "Nunito, sans-serif" }}
+    >
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <Button
+              asChild
+              variant="ghost"
+              className="text-slate-600 hover:text-slate-800"
             >
-              {subject}
-            </Badge>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-[hsl(var(--foreground-kid))] mb-3">
-              {title}
-            </h1>
-            {description && (
-              <p className="text-md text-[hsl(var(--muted-kid-foreground))] mb-6">
+              <Link href="/kid/courses">
+                <ArrowLeft className="h-4 w-4 mr-2" /> Back to All Adventures
+              </Link>
+            </Button>
+            <div className="space-y-4">
+              <h1 className="text-4xl md:text-5xl font-black text-slate-800 leading-tight">
+                {title}
+              </h1>
+              <p className="text-lg text-slate-600 leading-relaxed max-w-3xl">
                 {description}
               </p>
-            )}
-
-            <div className="space-y-2 mb-6">
-              <div className="flex justify-between text-sm text-[hsl(var(--muted-kid-foreground))]">
-                <span>Progress</span>
-                <span>
-                  {completedItems} / {totalItems} Activities
-                </span>
-              </div>
-              <Progress
-                value={courseProgressPercentage}
-                className="h-3 bg-[hsl(var(--primary-kid))]/20 [&>div]:bg-[hsl(var(--primary-kid))]"
-              />
             </div>
-            {/* Find first non-completed item to link "Start/Continue Course" button */}
-            {items.length > 0 && (
-              <Button
-                size="lg"
-                asChild
-                className="bg-[hsl(var(--primary-kid))] hover:bg-[hsl(var(--primary-kid))]/90 text-[hsl(var(--primary-kid-foreground))] text-lg px-8 py-3 shadow-lg hover:shadow-xl transition-shadow"
-              >
-                <Link
-                  href={
-                    items.find(
-                      (item) =>
-                        item.status !== "completed" && item.status !== "passed"
-                    )?.link || items[0].link
-                  }
-                >
-                  <PlayCircle className="mr-2 h-6 w-6" />
-                  {completedItems === 0
-                    ? "Start Adventure"
-                    : completedItems === totalItems
-                    ? "Review Adventure"
-                    : "Continue Adventure"}
-                </Link>
-              </Button>
-            )}
+            <div className="space-y-6">
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-bold text-slate-800">
+                  Adventure Steps
+                </h2>
+                <Sparkles className="h-6 w-6 text-yellow-500" />
+              </div>
+              <ul className="space-y-0">
+                {items.map((item, index) => (
+                  <AdventureStep
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    isLast={index === items.length - 1}
+                    isCurrent={index === currentStepIndex}
+                  />
+                ))}
+              </ul>
+            </div>
           </div>
-        </div>
-      </Card>
-
-      {/* Course Content Items */}
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-[hsl(var(--foreground-kid))] flex items-center">
-          <BarChartHorizontalBig className="mr-3 h-7 w-7 text-[hsl(var(--secondary-kid))]" />{" "}
-          Adventure Steps
-        </h2>
-        {items.length === 0 && (
-          <p className="text-[hsl(var(--muted-kid-foreground))]">
-            No activities in this adventure yet.
-          </p>
-        )}
-        <ul className="space-y-3">
-          {items.map((item, index) => {
-            const ItemIcon = getContentTypeIcon(item.contentType);
-            const isLocked = false; // TODO: Implement prerequisite logic later
-            const isCompleted =
-              item.status === "completed" || item.status === "passed";
-            // Determine if this is the next item to do
-            const isCurrentNext =
-              !isCompleted &&
-              (index === 0 ||
-                items[index - 1]?.status === "completed" ||
-                items[index - 1]?.status === "passed");
-
-            const itemContent = (
-              <div
-                className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200
-                                ${
-                                  isLocked
-                                    ? "bg-slate-100 dark:bg-slate-800 opacity-60 cursor-not-allowed border-slate-300 dark:border-slate-700"
-                                    : "hover:shadow-md hover:border-[hsl(var(--primary-kid))]/70 dark:hover:bg-[hsl(var(--muted-kid))]/30"
-                                }
-                                ${
-                                  isCompleted
-                                    ? "bg-green-500/10 dark:bg-green-800/20 border-green-500/50"
-                                    : "bg-[hsl(var(--card-kid))] border-[hsl(var(--border-kid))]"
-                                }
-                                ${
-                                  isCurrentNext && !isCompleted
-                                    ? "ring-2 ring-[hsl(var(--primary-kid))] ring-offset-2 ring-offset-[hsl(var(--background-kid))] shadow-lg"
-                                    : ""
-                                }
-                              `}
-              >
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div
-                    className={`flex items-center justify-center h-10 w-10 rounded-full text-white ${
-                      isCompleted
-                        ? "bg-green-500"
-                        : isCurrentNext
-                        ? "bg-[hsl(var(--primary-kid))]"
-                        : "bg-[hsl(var(--secondary-kid))]/70"
-                    }`}
+          <aside className="lg:col-span-1">
+            <div className="sticky top-8">
+              <Card className="rounded-2xl shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                <CardHeader className="p-0">
+                  <AspectRatio
+                    ratio={16 / 9}
+                    className="overflow-hidden rounded-t-2xl bg-slate-100"
                   >
-                    <ItemIcon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3
-                      className={`font-semibold text-md ${
-                        isCompleted
-                          ? "text-green-700 dark:text-green-300"
-                          : isCurrentNext
-                          ? "text-[hsl(var(--primary-kid))]"
-                          : "text-[hsl(var(--card-foreground-kid))]"
-                      }`}
-                    >
-                      {item.title}
-                    </h3>
-                    <p className="text-xs text-[hsl(var(--muted-kid-foreground))] capitalize">
-                      {item.contentType.toLowerCase()}
-                      {item.score !== null ? ` - Score: ${item.score}%` : ""}
+                    {coverImageUrl ? (
+                      <Image
+                        src={coverImageUrl}
+                        alt={title}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cyan-200 to-blue-200">
+                        <Trophy className="h-16 w-16 text-white/80" />
+                      </div>
+                    )}
+                  </AspectRatio>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-semibold text-slate-600">
+                        Progress
+                      </span>
+                      <span className="text-sm font-bold text-slate-800">
+                        {progressPercentage}%
+                      </span>
+                    </div>
+                    <Progress value={progressPercentage} className="h-4" />
+                    <p className="text-xs text-slate-500 text-center">
+                      {completedItemsCount} / {items.length} Steps Completed
                     </p>
                   </div>
-                </div>
-                {isCompleted && (
-                  <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0" />
-                )}
-                {isCurrentNext && !isCompleted && (
-                  <PlayCircle className="h-6 w-6 text-[hsl(var(--primary-kid))] flex-shrink-0 animate-pulse" />
-                )}
-                {isLocked && (
-                  <Lock className="h-5 w-5 text-slate-500 flex-shrink-0" />
-                )}
-              </div>
-            );
-
-            return (
-              <li key={item.id}>
-                {isLocked ? (
-                  <div
-                    className="opacity-70 cursor-not-allowed"
-                    title="Complete previous steps to unlock"
+                  <Badge className="bg-cyan-100 text-cyan-700 font-semibold">
+                    {subject}
+                  </Badge>
+                </CardContent>
+                <CardFooter className="p-6 pt-0">
+                  <Button
+                    asChild
+                    size="lg"
+                    className={`w-full font-bold rounded-xl shadow-lg transition-all duration-300 ${
+                      isCompleted
+                        ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                        : "bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                    } text-white`}
                   >
-                    {itemContent}
-                  </div>
-                ) : (
-                  <Link href={item.link || "#"} className="block">
-                    {" "}
-                    {/* item.link should be populated by getCourseDetails */}
-                    {itemContent}
-                  </Link>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                    <Link href={continueLink}>
+                      {isCompleted ? (
+                        <>
+                          <RefreshCw className="h-5 w-5 mr-2" /> Review
+                          Adventure
+                        </>
+                      ) : completedItemsCount > 0 ? (
+                        <>
+                          <PlayCircle className="h-5 w-5 mr-2" /> Continue
+                          Adventure
+                        </>
+                      ) : (
+                        <>
+                          <PlayCircle className="h-5 w-5 mr-2" /> Start
+                          Adventure!
+                        </>
+                      )}
+                    </Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   );

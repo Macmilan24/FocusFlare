@@ -4,12 +4,12 @@ import {
   auth,
   unstable_update as nextAuthServerUpdateSession,
 } from "@/lib/auth";
-import { signIn as nextAuthSignIn } from "@/lib/auth";
-import { signOut as nextAuthSignOut } from "@/lib/auth";
+import { signIn as nextAuthSignIn, signOut } from "@/lib/auth";
 import { AuthError } from "next-auth";
 import prisma from "@/lib/db/prisma";
 import bcrypt from "bcryptjs";
 import { Role, UserLearningProgress } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 
 export interface LoginFormState {
   message: string | null;
@@ -128,11 +128,12 @@ export async function registerParent(
   formData: FormData
 ): Promise<RegisterFormState> {
   try {
+    const name = formData.get("name") as string;
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const passwordConfirm = formData.get("passwordConfirm") as string;
 
-    if (!email || !password || !passwordConfirm) {
+    if (!name || !email || !password || !passwordConfirm) {
       return {
         message: "Please provide all required fields.",
         isError: true,
@@ -176,6 +177,7 @@ export async function registerParent(
     // --- Create the user ---
     await prisma.user.create({
       data: {
+        name,
         email,
         password: hashedPassword,
         role: Role.PARENT,
@@ -200,12 +202,10 @@ export async function registerParent(
 
 export async function handleSignOut() {
   try {
-    await nextAuthSignOut({ redirectTo: "/auth/signin" });
+    await signOut();
   } catch (error) {
-    if ((error as any)?.digest?.startsWith("NEXT_REDIRECT")) {
-      throw error;
-    }
-    console.error("Error signing out:", error);
+    console.error("Sign out error:", error);
+    // Optionally, re-throw or handle the error in a way that the UI can be notified.
   }
 }
 

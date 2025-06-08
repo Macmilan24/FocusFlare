@@ -34,7 +34,7 @@ export function ContentDisplayCard({ item }: ContentDisplayCardProps) {
 
   return (
     <Link href={linkHref} passHref className="block group h-full">
-      <Card className="h-full flex flex-col overflow-hidden shadow-lg hover:shadow-xl dark:hover:shadow-[hsl(var(--primary-kid))]/30 transition-all duration-300 ease-in-out transform hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring-kid))] focus-visible:ring-offset-2 border-2 border-transparent hover:border-[hsl(var(--primary-kid))]/50 rounded-2xl bg-[hsl(var(--card-kid))] text-[hsl(var(--card-foreground-kid))]">
+      <Card className="h-full flex flex-col overflow-hidden shadow-lg hover:shadow-xl dark:hover:shadow-[hsl(var(--primary-kid))]/30 transition-all duration-300 ease-in-out transform hover:-translate-y-1 focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring-kid))] focus-visible:ring-offset-2 border-2 border-transparent hover:border-[hsl(var(--primary-kid))]/50 rounded-2xl bg-[hsl(var(--card-kid))] text-[hsl(var(--card-foreground-kid))] ">
         <div className="relative w-full h-36 sm:h-40">
           {item.coverImageUrl ? (
             <Image
