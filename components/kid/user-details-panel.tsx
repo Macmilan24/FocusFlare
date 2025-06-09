@@ -1,184 +1,305 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// FILE: components/kid/user-details-panel.tsx
+
 import React from "react";
-import { X, Star } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Star,
+  Flame,
+  Award,
+  ShieldCheck,
+  CheckCircle,
+  ChevronDown,
+  Calendar as CalendarIcon,
+  BookCheck,
+  BookOpen,
+} from "lucide-react";
+import { format } from "date-fns";
+import { Bar, BarChart, ResponsiveContainer, XAxis, Tooltip } from "recharts";
+import { type KidData, type DailyActivity } from "@/types/kid"; // Use your real data types
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
-interface KidData {
-  name: string;
-  points: number;
-  avatarUrl: string;
-  dayStreak: number;
-  goalsThisMonth: number;
-  rank: number;
-}
-
+// Props this component will receive from its parent.
 interface UserDetailsPanelProps {
   kidData: KidData;
+  dailyActivityData: DailyActivity[];
   isOpen: boolean;
   onClose: () => void;
+  selectedDate: Date; // The currently viewed week's date
+  onDateChange: (date: Date) => void; // Function to call when the date changes
 }
+
+const CustomTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border bg-background p-2 shadow-sm">
+        <div className="grid grid-cols-1 gap-2">
+          <div className="flex flex-col">
+            <span className="text-[0.70rem] uppercase text-muted-foreground">
+              Focus Time
+            </span>
+            <span className="font-bold text-orange-500">
+              {payload[0].value} mins
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 export const UserDetailsPanel: React.FC<UserDetailsPanelProps> = ({
   kidData,
+  dailyActivityData,
   isOpen,
   onClose,
+  selectedDate,
+  onDateChange,
 }) => {
-  if (!isOpen) return null;
+  const dayInitials = ["M", "T", "W", "T", "F", "S", "S"];
+
+  const panelClasses = `
+    fixed right-0 top-0 h-full w-full max-w-sm 
+    bg-[#FFFBF7] dark:bg-slate-900/95 backdrop-blur-sm 
+    border-l border-orange-100 dark:border-slate-800 
+    p-4 overflow-y-auto z-50 shadow-lg transform 
+    transition-transform duration-300 ease-in-out
+    ${isOpen ? "translate-x-0" : "translate-x-full"}
+  `;
 
   return (
     <>
-      {/* Mobile Overlay */}
-      <div
-        className="fixed inset-0 bg-black/20 z-40 md:hidden"
-        onClick={onClose}
-      />
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-40 sm:hidden"
+          onClick={onClose}
+        />
+      )}
 
-      {/* Panel */}
-      <div
-        className={`
-        fixed md:absolute right-0 top-0 h-full w-80 max-w-[90vw] 
-        bg-gray-50 border-l border-gray-200 p-4 overflow-y-auto z-50 
-        shadow-lg transform transition-transform duration-300 ease-in-out
-        ${isOpen ? "translate-x-0" : "translate-x-full"}
-        md:translate-x-0 md:shadow-none
-      `}
-      >
+      <aside className={panelClasses}>
         <div className="space-y-4">
-          {/* User Profile Card */}
-          <Card className="bg-white border border-gray-200">
-            <CardContent className="p-6">
-              {/* Header with Close Button */}
-              <div className="flex justify-end mb-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClose}
-                  className="text-primary-kid hover:bg-orange-50 p-1"
-                >
-                  <X className="h-4 w-4" />
-                  <span className="ml-1 text-sm">Close Details</span>
-                </Button>
-              </div>
-
-              {/* User Info Row */}
-              <div className="flex items-center gap-4 mb-6">
-                {/* Avatar */}
-                <Avatar className="w-16 h-16 ring-2 ring-orange-200">
-                  <AvatarImage src={kidData.avatarUrl} alt={kidData.name} />
-                  <AvatarFallback className="bg-primary-kid text-white text-lg font-bold">
+          {/* Close Button */}
+          <div className="flex justify-end">
+            <button
+              onClick={onClose}
+              className="rounded-full p-2 hover:bg-orange-100 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              aria-label="Close details panel"
+            >
+              <svg
+                width="20"
+                height="20"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                className="text-orange-500"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+          {/* Main Profile Card */}
+          <Card className="border border-orange-100 shadow-inner shadow-orange-50 bg-white dark:bg-slate-800">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16 ring-2 ring-orange-400">
+                  <AvatarImage
+                    src={kidData.avatarUrl || undefined}
+                    alt={kidData.name}
+                  />
+                  <AvatarFallback className="bg-orange-100 text-orange-600 font-semibold">
                     {kidData.name
                       .split(" ")
                       .map((n) => n[0])
                       .join("")}
                   </AvatarFallback>
                 </Avatar>
-
-                {/* User Info Text Column */}
-                <div className="flex-1">
-                  <h3 className="font-bold text-lg text-gray-800 mb-1">
+                <div>
+                  <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">
                     {kidData.name}
                   </h3>
-                  <p className="text-sm text-gray-600 mb-2">
-                    UI/UX Designer & Developer
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Student
                   </p>
-
-                  {/* Points Row */}
-                  <div className="flex items-center gap-2">
-                    <Star className="h-4 w-4 text-primary-kid fill-current" />
-                    <span className="text-sm font-medium text-gray-700">
+                  <div className="flex items-center gap-1 mt-1">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                    <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">
                       {kidData.points} Points
                     </span>
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              {/* Statistics Row */}
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-primary-kid">
-                    {kidData.dayStreak}
+          {/* Statistics Card */}
+          <Card className="border border-orange-100 shadow-inner shadow-orange-50 bg-white dark:bg-slate-800">
+            <CardContent className="p-4">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="text-center">
+                  <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center mx-auto mb-2">
+                    <Flame className="h-5 w-5 text-orange-500" />
                   </div>
-                  <div className="text-xs text-gray-500">Days Streak</div>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                    {kidData.dailyStreak}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Days Streak
+                  </p>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-primary-kid">
-                    {kidData.goalsThisMonth}
+                <div className="text-center">
+                  <div className="h-8 w-8 rounded-lg bg-yellow-100 flex items-center justify-center mx-auto mb-2">
+                    <Award className="h-5 w-5 text-yellow-500" />
                   </div>
-                  <div className="text-xs text-gray-500">Goals</div>
+                  <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
+                    {kidData.badgesEarnedCount}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Badges
+                  </p>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-primary-kid">
-                    {kidData.rank}nd
+                <div className="text-center">
+                  <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center mx-auto mb-2">
+                    <ShieldCheck className="h-5 w-5 text-blue-500" />
                   </div>
-                  <div className="text-xs text-gray-500">Place</div>
+                  <p className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                    {kidData.rank}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Rank
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Weekly Streak Card */}
-          <Card className="bg-white border border-gray-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="font-semibold text-gray-800">Weekly Streak</h4>
-                <span className="text-xs text-gray-500">May 2024</span>
-              </div>
-
-              <div className="text-sm text-gray-600 mb-4">4/4 Weeks</div>
-
-              {/* Week Calendar */}
-              <div className="grid grid-cols-7 gap-1 mb-4">
-                {["M", "T", "W", "T", "F", "S", "S"].map((day, index) => (
-                  <div key={day} className="text-center">
-                    <p className="text-xs text-gray-400 mb-1">{day}</p>
+          {/* Weekly Streak Card - Now fully functional */}
+          <Card className="border border-orange-100 shadow-inner shadow-orange-50 bg-white dark:bg-slate-800">
+            <CardHeader className="flex flex-row items-center justify-between p-3 pb-2">
+              <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                Weekly Streak
+              </CardTitle>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(selectedDate, "MMM, yyyy")}
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && onDateChange(date)}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </CardHeader>
+            <CardContent className="p-3 pt-0">
+              <div className="grid grid-cols-7 gap-1">
+                {dayInitials.map((day, index) => (
+                  <div key={index} className="text-center">
+                    <div className="text-xs text-slate-400 mb-1">{day}</div>
                     <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
-                        index < 4
-                          ? "bg-primary-kid text-white"
-                          : "bg-gray-100 text-gray-400"
+                      className={`h-9 w-9 rounded-md flex items-center justify-center ${
+                        kidData.streakCalendar[index]
+                          ? "bg-orange-500 text-white"
+                          : "bg-orange-50 dark:bg-slate-700"
                       }`}
                     >
-                      {29 + index}
+                      {kidData.streakCalendar[index] && (
+                        <CheckCircle className="h-4 w-4" />
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
-
-              {/* Progress Summary */}
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">3 Courses</span>
-                  <span className="font-medium text-gray-800">
-                    17 Completed
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">In Progress</span>
-                  <span className="font-medium text-gray-800">Completed</span>
-                </div>
-              </div>
             </CardContent>
           </Card>
 
-          {/* Weekly Watch Time Card */}
-          <Card className="bg-white border border-gray-200">
-            <CardContent className="p-6">
-              <h4 className="font-semibold text-gray-800 mb-4">
-                Weekly Watch Time
-              </h4>
-              <div className="text-center">
-                <div className="gradient-bg-primary rounded-lg p-4 text-white mb-4">
-                  <div className="text-xs opacity-90 mb-1">6hrs</div>
-                  <div className="text-xl font-bold">4:24m</div>
-                  <div className="text-xs opacity-90 mt-1">4hrs</div>
+          {/* Course Progress Cards - Design Refined */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="border border-orange-100 shadow-inner shadow-orange-50 bg-white dark:bg-slate-800">
+              <CardContent className="p-3 text-center">
+                <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center mx-auto mb-2">
+                  <BookOpen className="h-4 w-4 text-blue-500" />
                 </div>
-                <div className="text-sm text-gray-600">4/4 Weeks</div>
-              </div>
+                <p className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                  {kidData.coursesInProgressCount}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  In Progress
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border border-orange-100 shadow-inner shadow-orange-50 bg-white dark:bg-slate-800">
+              <CardContent className="p-3 text-center">
+                <div className="h-8 w-8 rounded-lg bg-green-100 flex items-center justify-center mx-auto mb-2">
+                  <BookCheck className="h-4 w-4 text-green-500" />
+                </div>
+                <p className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                  {kidData.coursesCompletedCount}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Completed
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Weekly Watch Time Card - Now fully functional */}
+          <Card className="border border-orange-100 shadow-inner shadow-orange-50 bg-white dark:bg-slate-800">
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="text-base font-semibold text-slate-800 dark:text-slate-100">
+                Weekly Focus
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0">
+              <ResponsiveContainer width="100%" height={120}>
+                <BarChart
+                  data={dailyActivityData}
+                  margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
+                >
+                  <XAxis
+                    dataKey="date"
+                    stroke="#94a3b8"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    content={<CustomTooltip />}
+                    cursor={{ fill: "transparent" }}
+                  />
+                  <Bar
+                    dataKey="Focus Time (minutes)"
+                    fill="#FF4500"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
-      </div>
+      </aside>
     </>
   );
 };

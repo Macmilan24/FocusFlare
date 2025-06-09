@@ -7,7 +7,6 @@ import { ContentType, Role } from "@prisma/client";
 
 import type {
   KidHomePageData,
-  KidGamificationStats,
   ContinueLearningItem,
   RecommendedItem,
   KidData,
@@ -20,11 +19,7 @@ import {
   Mic2,
   Palette,
   Puzzle,
-  Rows,
-  Search,
   Sparkles,
-  Target,
-  Video,
   type LucideIcon,
 } from "lucide-react";
 import { getEarnedBadgesForUser } from "@/actions/gamification.actions";
@@ -392,151 +387,157 @@ export async function getKidProfileData(): Promise<Omit<
   }
 }
 
-export async function getKidGamificationStats(): Promise<KidGamificationStats | null> {
+// NEW: Define the structure for the bar chart data
+export interface DailyActivity {
+  date: string; // e.g., "Mon", "Tue"
+  "Focus Time (minutes)": number;
+}
+
+// UPDATED KidGamificationStats to include daily activity data
+export interface KidGamificationStats {
+  dailyStreak: number;
+  badgesEarnedCount: number;
+  coursesCompletedCount: number;
+  coursesInProgressCount: number;
+  rank: string;
+  weeklyFocusHours: number;
+  streakCalendar: boolean[];
+  dailyActivityChartData: DailyActivity[]; // NEW
+}
+
+export async function getKidGamificationStats(
+  // NEW: It now accepts a date to fetch data for a specific week
+  targetDateStr?: string
+): Promise<KidGamificationStats | null> {
   const kidUser = await getCurrentKidUser();
   if (!kidUser?.id) return null;
   const userId = kidUser.id;
 
   try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const targetDate = targetDateStr ? new Date(targetDateStr) : new Date();
+    targetDate.setHours(0, 0, 0, 0);
 
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(today.getDate() - 6);
+    // Calculate the start of the target week (assuming Monday is the first day)
+    const dayOfWeek = targetDate.getDay(); // 0=Sun, 1=Mon, ...
+    const diff = targetDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+    const startOfWeek = new Date(targetDate.setDate(diff));
+    startOfWeek.setHours(0, 0, 0, 0);
 
-    // Fetch UserLearningProgress for the last 7 days for streak and calendar
-    const recentProgress = await prisma.userLearningProgress.findMany({
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    // Fetch progress for the target week for the chart and calendar
+    const weeklyProgress = await prisma.userLearningProgress.findMany({
       where: {
         userId: userId,
-        lastAccessed: {
-          gte: sevenDaysAgo,
-        },
+        lastAccessed: { gte: startOfWeek, lt: endOfWeek },
       },
-      orderBy: { lastAccessed: "asc" },
       select: { lastAccessed: true },
     });
 
-    const activeDates = new Set(
-      recentProgress.map((p) => {
-        const d = new Date(p.lastAccessed);
-        d.setHours(0, 0, 0, 0); // Normalize to the start of the day
-        return d.toISOString().split("T")[0];
-      })
+    // --- NEW: Calculate Daily Activity for Bar Chart ---
+    const dailyMinutes: { [key: number]: number } = {
+      0: 0,
+      1: 0,
+      2: 0,
+      3: 0,
+      4: 0,
+      5: 0,
+      6: 0,
+    };
+    // Assuming each activity takes ~5 minutes for this calculation
+    weeklyProgress.forEach((p) => {
+      const accessDay = p.lastAccessed.getDay(); // 0=Sun, 1=Mon...
+      const dayIndex = accessDay === 0 ? 6 : accessDay - 1; // Convert to Mon=0 ... Sun=6
+      dailyMinutes[dayIndex] = (dailyMinutes[dayIndex] || 0) + 5;
+    });
+
+    const dailyActivityChartData: DailyActivity[] = [
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun",
+    ].map((day, index) => ({
+      date: day,
+      "Focus Time (minutes)": dailyMinutes[index] || 0,
+    }));
+    const weeklyFocusMinutes = Object.values(dailyMinutes).reduce(
+      (a, b) => a + b,
+      0
     );
+    const weeklyFocusHours = weeklyFocusMinutes / 60;
 
-    // Calculate Daily Streak
-    let dailyStreak = 0;
-    if (activeDates.size > 0) {
-      let consecutiveDays = 0;
-      const todayString = today.toISOString().split("T")[0];
-      const yesterdayString = new Date(new Date().setDate(today.getDate() - 1))
-        .toISOString()
-        .split("T")[0];
-
-      // Check if today or yesterday is active to start counting
-      if (activeDates.has(todayString) || activeDates.has(yesterdayString)) {
-        for (let i = 0; i < 7; i++) {
-          // Check up to 7 days back for consecutive sequence
-          const checkDate = new Date(today);
-          checkDate.setDate(today.getDate() - i);
-          if (activeDates.has(checkDate.toISOString().split("T")[0])) {
-            consecutiveDays++;
-          } else {
-            break; // Streak broken
-          }
-        }
-        // If the streak doesn't include today, but included yesterday, it's valid up to yesterday.
-        // If it includes today, it's up to today.
-        // If the most recent active day in the loop was not today or yesterday, the streak is 0.
-        if (
-          consecutiveDays > 0 &&
-          activeDates.has(
-            new Date(today.setDate(today.getDate() - (consecutiveDays - 1)))
-              .toISOString()
-              .split("T")[0]
-          )
-        ) {
-          dailyStreak = consecutiveDays;
-        } else {
-          dailyStreak = 0;
-        }
-      }
-    }
-
-    // Streak Calendar (Last 7 days)
+    // --- Streak Calendar for the *specific target week* ---
+    const activeDatesForWeek = new Set(
+      weeklyProgress.map((p) => p.lastAccessed.toISOString().split("T")[0])
+    );
     const streakCalendar = Array(7).fill(false);
     for (let i = 0; i < 7; i++) {
-      const dayToRepresent = new Date(sevenDaysAgo); // Start from 6 days ago
-      dayToRepresent.setDate(sevenDaysAgo.getDate() + i);
-      if (activeDates.has(dayToRepresent.toISOString().split("T")[0])) {
+      const checkDate = new Date(startOfWeek);
+      checkDate.setDate(startOfWeek.getDate() + i);
+      if (activeDatesForWeek.has(checkDate.toISOString().split("T")[0])) {
         streakCalendar[i] = true;
       }
     }
 
-    // Monthly Goals Completed
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const goalsThisMonthCompleted = await prisma.userLearningProgress.count({
-      where: {
-        userId: userId,
-        completedAt: {
-          gte: startOfMonth,
-          lte: today, // Count completions up to today in the current month
-        },
-        // Optionally, add specific criteria for what counts as a "goal"
-        // e.g., contentType: ContentType.COURSE or contentType: ContentType.QUIZ
-      },
+    // --- All-time stats (these don't depend on the targetDate) ---
+    // Fetch all-time progress for streak calculation
+    const allTimeProgress = await prisma.userLearningProgress.findMany({
+      where: { userId },
+      orderBy: { lastAccessed: "desc" },
+      select: { lastAccessed: true },
     });
-    const goalsThisMonthTotal = 5; // Static total goals for now
 
-    // Badges Earned Count
-    const badgesData = await getEarnedBadgesForUser(userId);
-    const badgesEarnedCount = badgesData.badges?.length ?? 0;
+    const allActiveDates = new Set(
+      allTimeProgress.map((p) => p.lastAccessed.toISOString().split("T")[0])
+    );
+    let dailyStreak = 0;
+    if (allActiveDates.size > 0) {
+      let consecutiveDays = 0;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 365; i++) {
+        // Check up to a year
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        if (allActiveDates.has(d.toISOString().split("T")[0])) {
+          consecutiveDays++;
+        } else {
+          // If the first day missed wasn't today, the streak is broken
+          if (i > 0) break;
+        }
+      }
+      // If today is not active, but yesterday was, the streak is still valid but doesn't include today.
+      // If today is not active, and yesterday was not active, streak is 0.
+      if (!allActiveDates.has(today.toISOString().split("T")[0])) {
+        consecutiveDays--;
+      }
+      dailyStreak = Math.max(0, consecutiveDays);
+    }
 
-    // Courses Completed Count
+    const badgesEarnedCount = await prisma.userBadge.count({
+      where: { userId },
+    });
     const coursesCompletedCount = await prisma.userLearningProgress.count({
-      where: {
-        userId: userId,
-        content: { contentType: ContentType.COURSE },
-        completedAt: { not: null }, // Main indicator for completion
-        // OR: { status: "completed" } // Alternative if completedAt is not always set
-      },
-    });
-
-    // Courses In Progress Count
+      where: { userId, status: { in: ["completed", "passed"] } },
+    }); // Simplified for example
     const coursesInProgressCount = await prisma.userLearningProgress.count({
-      where: {
-        userId: userId,
-        content: { contentType: ContentType.COURSE },
-        completedAt: null,
-        status: { notIn: ["completed", "passed"] }, // Assuming status might also indicate completion
-      },
+      where: { userId, status: "inprogress" },
     });
 
-    // Rank (based on points)
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { points: true },
     });
-    const userPoints = user?.points ?? 0;
-    let rank = "Explorer";
-    if (userPoints > 1000) rank = "Trailblazer";
-    if (userPoints > 5000) rank = "Voyager"; // Example thresholds
-
-    // Weekly Focus Hours (Estimate)
-    // This is a very rough estimate. Consider more sophisticated tracking if needed.
-    // Counts distinct days active in the last week, assumes 1 hour per active day.
-    const distinctActiveDaysLastWeek = new Set();
-    const oneWeekAgoUTIL = new Date();
-    oneWeekAgoUTIL.setDate(oneWeekAgoUTIL.getDate() - 7);
-    oneWeekAgoUTIL.setHours(0, 0, 0, 0);
-
-    recentProgress.forEach((p) => {
-      const accessDate = new Date(p.lastAccessed);
-      if (accessDate >= oneWeekAgoUTIL) {
-        distinctActiveDaysLastWeek.add(accessDate.toISOString().split("T")[0]);
-      }
-    });
-    const weeklyFocusHours = distinctActiveDaysLastWeek.size * 0.5; // Placeholder: 0.5 hour per active day
+    const rank =
+      user && user.points > 1000
+        ? "Pro"
+        : user && user.points > 500
+        ? "Learner"
+        : "Explorer";
 
     return {
       dailyStreak,
@@ -546,18 +547,11 @@ export async function getKidGamificationStats(): Promise<KidGamificationStats | 
       rank,
       weeklyFocusHours,
       streakCalendar,
+      dailyActivityChartData,
     };
   } catch (error) {
     console.error("Error fetching kid gamification stats:", error);
-    return {
-      dailyStreak: 0,
-      badgesEarnedCount: 0,
-      coursesCompletedCount: 0,
-      coursesInProgressCount: 0,
-      rank: "Explorer",
-      weeklyFocusHours: 0,
-      streakCalendar: Array(7).fill(false),
-    };
+    return null; // Return null on error
   }
 }
 

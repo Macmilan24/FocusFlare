@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 import { LucideIcon } from "lucide-react";
 
 // For the User Details Panel and general kid information
@@ -10,7 +11,7 @@ export interface KidData {
   // Gamification stats - will be populated by a separate action
   dailyStreak?: number;
   goalsThisMonthCompleted?: number; // Will be repurposed for Badges Earned
-  goalsThisMonthTotal?: number;     // Will be repurposed for Courses Completed
+  goalsThisMonthTotal?: number; // Will be repurposed for Courses Completed
   badgesEarnedCount?: number; // New field
   coursesCompletedCount?: number; // New field
   coursesInProgressCount?: number; // New field for the dedicated stat box
@@ -51,9 +52,9 @@ export interface ContentItem {
   gradeLevel?: string; // e.g. "Grade 3"
   subject?: string;
   coverImageUrl?: string | null;
-  
+
   // field for lessons count for a course
-  lessonsCount?: number; 
+  lessonsCount?: number;
 }
 
 // Specific to "Continue Learning" where progress is central
@@ -68,21 +69,37 @@ export interface RecommendedItem extends ContentItem {
 
 // For the Kid Home Page data fetching
 export interface KidHomePageData {
-  kidData: Omit<KidData, 'dailyStreak' | 'badgesEarnedCount' | 'coursesCompletedCount' | 'coursesInProgressCount' | 'rank' | 'weeklyFocusHours' | 'streakCalendar' | 'goalsThisMonthCompleted' | 'goalsThisMonthTotal'>; // Basic profile, remove stats
+  kidData: Omit<
+    KidData,
+    | "dailyStreak"
+    | "badgesEarnedCount"
+    | "coursesCompletedCount"
+    | "coursesInProgressCount"
+    | "rank"
+    | "weeklyFocusHours"
+    | "streakCalendar"
+    | "goalsThisMonthCompleted"
+    | "goalsThisMonthTotal"
+  >; // Basic profile, remove stats
   continueLearning: ContinueLearningItem[];
   recommendedItems: RecommendedItem[];
   subjectSections: Record<string, RecommendedItem[]>; // <-- Added for dashboard subject grouping
 }
 
-// For the Gamification Stats data fetching
+// NEW: This type was missing.
+export interface DailyActivity {
+  date: string; // e.g., "Mon", "Tue"
+  "Focus Time (minutes)": number;
+}
+
+// UPDATED: This now includes all the new stats.
 export interface KidGamificationStats {
   dailyStreak: number;
-  // goalsThisMonthCompleted: number; // Will be replaced by badgesEarnedCount
-  // goalsThisMonthTotal: number;     // Will be replaced by coursesCompletedCount
   badgesEarnedCount: number;
   coursesCompletedCount: number;
   coursesInProgressCount: number;
-  rank?: string;
+  rank: string;
   weeklyFocusHours: number;
-  streakCalendar: boolean[]; // Array of 7 booleans, e.g., [true, true, false, true, false, false, false]
-} 
+  streakCalendar: boolean[];
+  dailyActivityChartData: DailyActivity[]; // NEW
+}
