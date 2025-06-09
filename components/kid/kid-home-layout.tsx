@@ -89,8 +89,8 @@ export default function KidHomeLayout({
           )}
           {/* Hide header on small screens */}
           <header className="hidden md:flex sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b dark:border-slate-800 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center w-full">
+              <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button variant="ghost" size="icon" className="lg:hidden">
@@ -123,7 +123,7 @@ export default function KidHomeLayout({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 ml-auto">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -169,7 +169,7 @@ export default function KidHomeLayout({
                     Search Results for "{searchQuery}"
                   </h2>
                   {searchResults.length > 0 ? (
-                    <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+                    <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))] justify-center">
                       {searchResults.map((item) => (
                         <CourseCard key={`${item.id}-search`} course={item} />
                       ))}
@@ -187,7 +187,7 @@ export default function KidHomeLayout({
                       <h2 className="text-xl font-bold mb-4">
                         Continue Learning
                       </h2>
-                      <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+                      <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))] justify-center">
                         {continueAdventures.map((course) => (
                           <CourseCard key={course.id} course={course} />
                         ))}
@@ -199,7 +199,7 @@ export default function KidHomeLayout({
                       <h2 className="text-xl font-bold mb-4">
                         Recommended For You
                       </h2>
-                      <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+                      <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))] justify-center">
                         {recommendedItems.map((course) => (
                           <CourseCard key={course.id} course={course} />
                         ))}
