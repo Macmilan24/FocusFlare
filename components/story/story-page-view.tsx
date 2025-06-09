@@ -1,10 +1,23 @@
-// components/story/story-page-view.tsx
+// FILE: components/story/story-viewer.tsx
+
 "use client";
 
 import { useState, useTransition } from "react";
-// Ensure StoryPageContent and StoryPageData are imported or defined correctly
-// from your actions/content.actions.ts
-import { StoryPageContent, StoryPageData } from "@/actions/content.actions";
+import Image from "next/image";
+import Link from "next/link";
+import { toast } from "sonner";
+import {
+  Award,
+  BookOpenCheck,
+  ChevronLeft,
+  ChevronRight,
+  ImageOff,
+  Loader2,
+} from "lucide-react";
+
+import { StoryPageContent } from "@/actions/content.actions";
+import { markStoryAsCompleted } from "@/actions/content.actions";
+import { refreshClientSession } from "@/actions/auth.actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,182 +26,158 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  ChevronLeft,
-  ChevronRight,
-  BookOpenCheck,
-  PartyPopper,
-  AlertTriangle,
-  ImageOff,
-  Award, // Keep this if you want a placeholder for missing images
-} from "lucide-react";
-import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
-import { markStoryAsCompleted } from "@/actions/content.actions";
-import { refreshClientSession } from "@/actions/auth.actions";
-import { toast } from "sonner";
-import Image from "next/image"; // Import Next.js Image component
 
-interface StoryPageViewProps {
-  story: StoryPageContent; // This should now expect pages: StoryPageData[]
+interface StoryViewerProps {
+  story: StoryPageContent;
 }
 
-export default function StoryPageView({ story }: StoryPageViewProps) {
-  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+export default function StoryViewer({ story }: StoryViewerProps) {
+  const [currentPage, setCurrentPage] = useState(0);
   const [isCompleting, startCompletionTransition] = useTransition();
 
   const totalPages = story.pages.length;
-  // currentPageData is now an object: { text: string, imageUrl?: string | null }
-  const currentPageData: StoryPageData = story.pages[currentPageIndex];
-
-  const isFirstPage = currentPageIndex === 0;
-  const isLastPage = currentPageIndex === totalPages - 1;
-
-  const goToNextPage = () => {
-    if (!isLastPage) {
-      setCurrentPageIndex((prev) => prev + 1);
-    }
-  };
-
-  const goToPreviousPage = () => {
-    if (!isFirstPage) {
-      setCurrentPageIndex((prev) => prev - 1);
-    }
-  };
-
+  const isFirstPage = currentPage === 0;
+  const isLastPage = currentPage === totalPages - 1;
   const progressPercentage =
-    totalPages > 0 ? ((currentPageIndex + 1) / totalPages) * 100 : 0;
+    totalPages > 0 ? ((currentPage + 1) / totalPages) * 100 : 0;
+
+  const handlePrevious = () => {
+    if (!isFirstPage) setCurrentPage(currentPage - 1);
+  };
+
+  const handleNext = () => {
+    if (!isLastPage) setCurrentPage(currentPage + 1);
+  };
 
   const handleFinishStory = () => {
     startCompletionTransition(async () => {
       const result = await markStoryAsCompleted(story.id);
       if (result.success) {
         toast.success(result.message || "Great job finishing the story!", {
-          icon: <PartyPopper className="h-5 w-5" />,
-          duration: 3000,
+          icon: <BookOpenCheck className="h-5 w-5" />,
         });
-        await refreshClientSession({ points: result.newPointsTotal });
+        // We only refresh the session if there's a new point total
+        if (result.newPointsTotal) {
+          await refreshClientSession({ points: result.newPointsTotal });
+        }
       } else {
-        toast.error(result.error || "Could not save your progress.", {
-          icon: <AlertTriangle className="h-5 w-5" />,
-          duration: 3000,
-        });
+        toast.error(result.error || "Could not save your progress.");
       }
+      // Show badge toast separately for more impact
       if (result.awardedBadge) {
         toast.success(`🎉 Badge Unlocked: ${result.awardedBadge.name}!`, {
           description: result.awardedBadge.description,
-          icon: <Award className="h-5 w-5 text-yellow-500" />, // Example icon
+          icon: <Award className="h-5 w-5 text-yellow-500" />,
           duration: 5000,
         });
       }
     });
   };
 
+  const currentPageData = story.pages[currentPage];
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-150px)] p-4 sm:p-6 md:p-8">
-      {" "}
-      {/* Added responsive padding */}
-      <Card className="w-full max-w-3xl shadow-xl bg-card">
-        {" "}
-        {/* Increased max-width */}
-        <CardHeader className="text-center border-b pb-4">
-          {" "}
-          {/* Added border-b */}
-          <CardTitle className="text-2xl md:text-3xl font-bold">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 flex flex-col items-center justify-center">
+      <Card className="w-full max-w-4xl shadow-xl">
+        <CardHeader className="text-center space-y-4 border-b pb-6">
+          <CardTitle className="text-3xl md:text-4xl font-bold">
             {story.title}
           </CardTitle>
-          {/* Optional: Display Cover Image from story object if it exists */}
-          {story.coverImageUrl && (
-            <div className="mt-4 relative w-full h-40 md:h-56 rounded-md overflow-hidden">
-              <Image
-                src={story.coverImageUrl}
-                alt={`${story.title} cover`}
-                layout="fill"
-                objectFit="cover"
-              />
-            </div>
-          )}
-          <div className="mt-4">
-            {" "}
-            {/* Wrapper for progress and page count */}
+          <div className="space-y-2">
             <Progress
               value={progressPercentage}
-              className="w-full mt-2 h-3" // Slightly thicker progress bar
-              // color="bg-green-500" // shadcn Progress doesn't take color prop directly, style via CSS vars or className
+              className="h-3 [&>div]:bg-[#FF4500]"
             />
-            <p className="text-sm text-muted-foreground mt-1">
-              Page {currentPageIndex + 1} of {totalPages}
+            <p className="text-muted-foreground text-sm">
+              Page {currentPage + 1} of {totalPages}
             </p>
           </div>
         </CardHeader>
-        <CardContent className="p-4 sm:p-6 md:p-8">
-          {" "}
-          {/* Added responsive padding */}
-          {/* Layout for image and text - image above text */}
-          {currentPageData.imageUrl ? (
-            <div className="mb-4 sm:mb-6 relative w-full h-48 sm:h-64 md:h-80 rounded-lg overflow-hidden shadow-md">
-              <Image
-                src={currentPageData.imageUrl}
-                alt={`Illustration for page ${currentPageIndex + 1}`}
-                layout="fill"
-                objectFit="contain" // Or "cover"
-                className="bg-slate-100 dark:bg-slate-800"
-              />
+
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            {/* Image Column */}
+            <div className="order-2 md:order-1">
+              <div className="aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border">
+                {currentPageData.imageUrl ? (
+                  <Image
+                    src={currentPageData.imageUrl}
+                    alt={`Story illustration for page ${currentPage + 1}`}
+                    width={400}
+                    height={400}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                    <ImageOff className="w-16 h-16 mb-2" />
+                    <p className="text-sm text-center px-4">
+                      No illustration for this page
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-          ) : (
-            // Optional: Show a placeholder if no image, or nothing
-            <div className="mb-4 flex items-center justify-center h-48 sm:h-64 md:h-80 bg-slate-100 dark:bg-slate-800 rounded-lg">
-              <ImageOff className="h-12 w-12 text-muted-foreground" />
+
+            {/* Text Column */}
+            <div className="order-1 md:order-2">
+              <div className="prose prose-lg max-w-none dark:prose-invert">
+                <p className="text-xl leading-relaxed whitespace-pre-line">
+                  {currentPageData.text}
+                </p>
+              </div>
             </div>
-          )}
-          {/* Apply prose classes for better text formatting if @tailwindcss/typography is installed */}
-          <div className="prose dark:prose-invert max-w-none text-lg md:text-xl leading-relaxed whitespace-pre-line text-card-foreground/90">
-            {currentPageData.text}
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between p-4 sm:p-6 border-t">
-          {" "}
-          {/* Added responsive padding */}
+
+        <CardFooter className="flex justify-between items-center p-6 border-t">
           <Button
-            onClick={goToPreviousPage}
-            disabled={isFirstPage || isCompleting}
             variant="outline"
-            size="lg" // Made buttons larger
-            className="px-6 py-3"
+            size="lg"
+            onClick={handlePrevious}
+            disabled={isFirstPage || isCompleting}
           >
-            <ChevronLeft className="mr-2 h-5 w-5" /> Previous
+            <ChevronLeft className="mr-2 w-4 h-4" /> Previous
           </Button>
+
           {isLastPage ? (
             <Button
+              size="lg"
               onClick={handleFinishStory}
               disabled={isCompleting}
-              variant="default"
-              size="lg"
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3"
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
-              {isCompleting ? "Saving..." : "Finish Story"}
-              <BookOpenCheck className="ml-2 h-5 w-5" />
+              {isCompleting ? (
+                <>
+                  <Loader2 className="mr-2 w-4 h-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  Finish Story <BookOpenCheck className="ml-2 w-4 h-4" />
+                </>
+              )}
             </Button>
           ) : (
             <Button
-              onClick={goToNextPage}
-              disabled={isLastPage || isCompleting}
               size="lg"
-              className="px-6 py-3"
+              onClick={handleNext}
+              disabled={isCompleting}
+              className="bg-[#FF4500] hover:bg-[#FF4500]/90 text-white"
             >
-              Next <ChevronRight className="ml-2 h-5 w-5" />
+              Next <ChevronRight className="ml-2 w-4 h-4" />
             </Button>
           )}
         </CardFooter>
       </Card>
-      {isLastPage && (
+
+      <div className="mt-6">
         <Link
           href="/kid/stories"
-          className="mt-8 inline-block text-primary hover:underline font-medium text-lg" // Made link text larger
+          className="text-muted-foreground hover:text-primary transition-colors"
         >
           ← Back to All Stories
         </Link>
-      )}
+      </div>
     </div>
   );
 }

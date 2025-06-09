@@ -1,89 +1,103 @@
+// FILE: app/kid/quizzes/page.tsx
+
+import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getQuizzesList } from "@/actions/content.actions"; // Adjust path
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import Image from "next/image";
-import Link from "next/link";
-import { Puzzle } from "lucide-react"; // Example icons
+import { getQuizzesList, getQuizSubjects } from "@/actions/content.actions";
+import QuizzesListView from "@/components/quiz/quizzes-list-view";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Puzzle } from "lucide-react";
 
-export default async function QuizzesListPage() {
-  const session = await auth();
-  if (!session?.user) redirect("/auth/signin");
-
-  const { quizzes, error } = await getQuizzesList();
-
-  if (error) {
-    return (
-      <div className="p-4 md:p-8 text-red-500">
-        Error loading quizzes: {error}
-      </div>
-    );
-  }
-  if (!quizzes || quizzes.length === 0) {
-    return (
-      <div className="p-4 md:p-8 text-muted-foreground">
-        No quizzes available yet. Time to test your knowledge soon!
-      </div>
-    );
-  }
-
+// This is the loading UI that will be shown while the server fetches data.
+function QuizzesListSkeleton() {
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-8 text-center">
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Quiz Zone</h1>
-        <p className="mt-3 text-lg sm:text-xl text-gray-600 dark:text-gray-400">
-          Challenge yourself and learn new things!
+    <div className="container py-8">
+      <div className="text-center mb-8">
+        <h1 className="font-extrabold tracking-tight text-4xl md:text-5xl mb-2">
+          Quiz Zone
+        </h1>
+        <p className="text-muted-foreground text-lg">
+          Challenge yourself and learn something new!
         </p>
       </div>
-
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {quizzes.map((quiz) => (
-          <Link href={`/kid/quizzes/${quiz.id}`} key={quiz.id} passHref>
-            {" "}
-            {/* Link will 404 for now */}
-            <Card className="h-full flex flex-col overflow-hidden hover:shadow-xl transition-shadow duration-200 ease-in-out cursor-pointer group">
-              {quiz.coverImageUrl ? (
-                <div className="relative w-full h-40">
-                  {" "}
-                  {/* Adjusted height for quiz card */}
-                  <Image
-                    src={quiz.coverImageUrl}
-                    alt={quiz.title}
-                    layout="fill"
-                    objectFit="cover"
-                    className="transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-              ) : (
-                <div className="w-full h-40 bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center group-hover:bg-indigo-200 dark:group-hover:bg-indigo-800 transition-colors">
-                  <Puzzle className="h-16 w-16 text-indigo-500 dark:text-indigo-400" />
-                </div>
-              )}
-              <CardHeader>
-                <CardTitle className="text-lg font-semibold group-hover:text-primary">
-                  {quiz.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <CardDescription className="text-sm">
-                  {quiz.description || "An exciting quiz!"}
-                </CardDescription>
-                {quiz.questionCount && quiz.questionCount > 0 && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {quiz.questionCount} questions
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </Link>
+      <div className="flex flex-col md:flex-row gap-4 md:justify-between md:items-center mb-8">
+        <Skeleton className="h-10 w-full md:flex-1" />
+        <Skeleton className="h-10 w-full md:w-[200px]" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <Card key={index} className="overflow-hidden">
+            <div className="aspect-[4/3] bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+              <Puzzle className="h-16 w-16 text-purple-400 dark:text-purple-600" />
+            </div>
+            <CardHeader>
+              <Skeleton className="h-6 w-3/4 mb-2" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-4 w-full mb-2" />
+              <Skeleton className="h-4 w-4/5" />
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>
+  );
+}
+
+// This is the main page component. It's a Server Component.
+export default async function QuizzesListPage({
+  searchParams,
+}: {
+  searchParams?: {
+    query?: string;
+    subject?: string;
+    page?: string;
+  };
+}) {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/auth/signin");
+  }
+
+  // Read parameters from the URL
+  const query = searchParams?.query || "";
+  const subject = searchParams?.subject || "";
+  const currentPage = Number(searchParams?.page) || 1;
+
+  // Fetch data from server actions in parallel for efficiency
+  const [quizzesData, availableSubjects] = await Promise.all([
+    getQuizzesList({ query, subject, page: currentPage }),
+    getQuizSubjects(),
+  ]);
+
+  const { quizzes, totalPages, error } = quizzesData;
+
+  // Handle potential errors from the server action
+  if (error) {
+    return <div className="p-8 text-center text-red-500">Error: {error}</div>;
+  }
+
+  if (!quizzes) {
+    return (
+      <div className="p-8 text-center text-muted-foreground">
+        Could not load quizzes.
+      </div>
+    );
+  }
+
+  // Render the Suspense boundary and the client component with the fetched data
+  return (
+    <Suspense
+      key={query + subject + currentPage}
+      fallback={<QuizzesListSkeleton />}
+    >
+      <QuizzesListView
+        quizzes={quizzes}
+        availableSubjects={availableSubjects}
+        totalPages={totalPages || 1}
+        currentPage={currentPage}
+      />
+    </Suspense>
   );
 }

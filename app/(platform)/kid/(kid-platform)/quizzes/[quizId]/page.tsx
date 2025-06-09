@@ -1,10 +1,13 @@
+// FILE: app/kid/quizzes/[quizId]/page.tsx
+
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getQuizById } from "@/actions/content.actions";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import QuizView from "@/components/quiz/quiz-view";
+import QuizView from "@/components/quiz/quiz-view"; // Make sure this path is correct
+
 interface QuizDetailsPageProps {
   params: {
     quizId: string;
@@ -44,7 +47,6 @@ export default async function QuizDetailsPage({
   }
 
   if (!quiz) {
-    // This case should ideally be caught by the error above, but as a fallback
     return (
       <div className="p-4 md:p-8 text-center">
         <Button

@@ -11,6 +11,10 @@ export interface StoryListItem {
   title: string;
   description: string | null;
   coverImageUrl?: string | null;
+  course?: {
+    id: string;
+    title: string;
+  } | null;
 }
 
 export interface StoryPageContent {
@@ -30,14 +34,6 @@ export interface MarkCompletionResult {
 export interface StoryPageData {
   text: string;
   imageUrl?: string | null;
-}
-
-export interface QuizListItem {
-  id: string;
-  title: string;
-  description: string | null;
-  questionCount?: number;
-  coverImageUrl?: string | null;
 }
 
 export interface QuizOption {
@@ -83,24 +79,135 @@ export interface LessonData {
   courseId?: string; // <-- Add this field for course linkage
 }
 
-export async function getStoriesList(): Promise<{
-  stories?: StoryListItem[];
-  error?: string;
-}> {
+// --- Quiz Interfaces (No Changes) ---
+export interface QuizListItem {
+  id: string;
+  title: string;
+  description: string | null;
+  questionCount?: number;
+  coverImageUrl?: string | null;
+  course?: {
+    // NEW: Add optional course info
+    id: string;
+    title: string;
+  } | null;
+}
+
+export interface QuizOption {
+  id: string;
+  text: string;
+}
+
+export interface QuizQuestion {
+  id: string;
+  text: string;
+  options: QuizOption[];
+  correctOptionId: string;
+  explanation?: string | null;
+}
+
+export interface QuizData {
+  id: string;
+  title: string;
+  description?: string | null;
+  questions: QuizQuestion[];
+  passingScorePercentage?: number | null;
+}
+
+export interface LessonBlock {
+  id: string;
+  type: "text" | "image" | "video";
+  content?: string; // for text
+  url?: string; // for image/video
+  alt?: string; // for image
+}
+
+export interface LessonSection {
+  id: string;
+  title: string;
+  blocks: LessonBlock[];
+}
+
+export interface LessonData {
+  id: string;
+  title: string;
+  description?: string | null;
+  sections: LessonSection[];
+  courseId?: string; // <-- Add this field for course linkage
+}
+
+export async function getStorySubjects(): Promise<string[]> {
   try {
-    const storyContents = await prisma.learningContent.findMany({
+    const subjects = await prisma.learningContent.findMany({
       where: {
         contentType: ContentType.STORY,
-        subject: "StoryTime",
+      },
+      distinct: ["subject"],
+      select: {
+        subject: true,
       },
       orderBy: {
-        createdAt: "asc",
+        subject: "asc",
       },
+    });
+    return subjects.map((s) => s.subject);
+  } catch (error) {
+    console.error("Error fetching story subjects:", error);
+    return [];
+  }
+}
+
+export async function getStoriesList(params: {
+  query?: string;
+  subject?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
+  stories?: StoryListItem[];
+  totalPages?: number;
+  currentPage?: number;
+  error?: string;
+}> {
+  const { query, subject, page = 1, limit = 8 } = params;
+
+  try {
+    const whereClause: any = {
+      contentType: ContentType.STORY,
+    };
+
+    if (query) {
+      whereClause.title = {
+        contains: query,
+        mode: "insensitive", // Case-insensitive search
+      };
+    }
+    if (subject) {
+      whereClause.subject = subject;
+    }
+
+    const totalStories = await prisma.learningContent.count({
+      where: whereClause,
+    });
+
+    const storyContents = await prisma.learningContent.findMany({
+      where: whereClause,
+      orderBy: {
+        createdAt: "desc", // Show newest first
+      },
+      skip: (page - 1) * limit,
+      take: limit,
       select: {
         id: true,
         title: true,
         description: true,
         content: true,
+        course: {
+          // Include course data
+          select: {
+            id: true,
+            title: true,
+          },
+        },
       },
     });
 
@@ -118,10 +225,15 @@ export async function getStoriesList(): Promise<{
         title: item.title,
         description: item.description,
         coverImageUrl: coverImageUrl,
+        course: item.course, // Add course data to the returned object
       };
     });
 
-    return { stories };
+    return {
+      stories,
+      currentPage: page,
+      totalPages: Math.ceil(totalStories / limit),
+    };
   } catch (error) {
     console.error("Error fetching stories list:", error);
     return { error: "Failed to fetch stories." };
@@ -305,31 +417,86 @@ export async function markStoryAsCompleted(
   }
 }
 
-export async function getQuizzesList(): Promise<{
-  quizzes?: QuizListItem[];
-  error?: string;
-}> {
+// NEW: Helper function to get all unique subjects for quizzes
+export async function getQuizSubjects(): Promise<string[]> {
   try {
-    const quizContentItems = await prisma.learningContent.findMany({
+    const subjects = await prisma.learningContent.findMany({
       where: {
         contentType: ContentType.QUIZ,
-        subject: "QuizZone",
+      },
+      distinct: ["subject"],
+      select: {
+        subject: true,
       },
       orderBy: {
-        createdAt: "asc",
+        subject: "asc",
       },
+    });
+    return subjects.map((s) => s.subject);
+  } catch (error) {
+    console.error("Error fetching quiz subjects:", error);
+    return [];
+  }
+}
+
+// UPDATED: getQuizzesList now supports search, filter, and pagination
+export async function getQuizzesList(
+  params: {
+    query?: string;
+    subject?: string;
+    page?: number;
+    limit?: number;
+  } = {}
+): Promise<{
+  quizzes?: QuizListItem[];
+  totalPages?: number;
+  currentPage?: number;
+  error?: string;
+}> {
+  const { query, subject, page = 1, limit = 8 } = params;
+
+  try {
+    const whereClause: any = {
+      contentType: ContentType.QUIZ,
+    };
+
+    if (query) {
+      whereClause.title = {
+        contains: query,
+        mode: "insensitive",
+      };
+    }
+    if (subject) {
+      whereClause.subject = subject;
+    }
+
+    const totalQuizzes = await prisma.learningContent.count({
+      where: whereClause,
+    });
+
+    const quizContentItems = await prisma.learningContent.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * limit,
+      take: limit,
       select: {
         id: true,
         title: true,
         description: true,
         content: true,
+        coverImageUrl: true,
+        course: {
+          // Include course data
+          select: {
+            id: true,
+            title: true,
+          },
+        },
       },
     });
 
     const quizzes: QuizListItem[] = quizContentItems.map((item) => {
       let questionCount = 0;
-      let coverImageUrl: string | null = null;
-
       if (item.content && typeof item.content === "object") {
         const contentJson = item.content as any;
         if (
@@ -338,12 +505,6 @@ export async function getQuizzesList(): Promise<{
         ) {
           questionCount = contentJson.questions.length;
         }
-        if (
-          "coverImageUrl" in contentJson &&
-          typeof contentJson.coverImageUrl === "string"
-        ) {
-          coverImageUrl = contentJson.coverImageUrl;
-        }
       }
 
       return {
@@ -351,11 +512,16 @@ export async function getQuizzesList(): Promise<{
         title: item.title,
         description: item.description,
         questionCount: questionCount,
-        coverImageUrl: coverImageUrl,
+        coverImageUrl: item.coverImageUrl,
+        course: item.course, // Add course data
       };
     });
 
-    return { quizzes };
+    return {
+      quizzes,
+      currentPage: page,
+      totalPages: Math.ceil(totalQuizzes / limit),
+    };
   } catch (error) {
     console.error("Error fetching quizzes list:", error);
     return { error: "Failed to fetch quizzes." };

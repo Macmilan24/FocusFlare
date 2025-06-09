@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, BookOpen, Book, Trophy, Award, Settings } from "lucide-react";
+import Image from "next/image";
 
 const navigationItems = [
   { title: "Dashboard", icon: Home, href: "/kid/home" },
@@ -9,7 +10,7 @@ const navigationItems = [
   { title: "Stories", icon: Book, href: "/kid/stories" },
   { title: "Quizzes", icon: Trophy, href: "/kid/quizzes" },
   { title: "Badges", icon: Award, href: "/kid/badges" },
-  { title: "Settings", icon: Settings, href: "/kid/settings" },
+  { title: "Settings", icon: Settings, href: "/kid/profile/edit" },
 ];
 
 export const KidSidebar = () => {
@@ -18,13 +19,16 @@ export const KidSidebar = () => {
     <div className="h-full w-64 border-r border-orange-100 bg-white flex flex-col">
       {/* Logo/Brand */}
       <div className="p-6 border-b border-orange-100">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 gradient-bg-primary rounded-xl flex items-center justify-center">
-            <span className="text-white font-bold text-lg">🔥</span>
-          </div>
-          <div>
-            <h1 className="font-bold text-lg text-gray-800">FocusFlare</h1>
-            <p className="text-xs text-gray-500">Kids Learning</p>
+        <div className="flex flex-col items-center justify-center">
+          <div className="w-full h-full rounded-2xl flex items-center justify-center bg-white overflow-hidden mb-2 shadow-lg">
+            <Image
+              src="/Logo/logo.jpg"
+              alt="FocusFlare Logo"
+              width={80}
+              height={80}
+              className="w-full h-full object-contain"
+              priority
+            />
           </div>
         </div>
       </div>
