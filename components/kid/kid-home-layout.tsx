@@ -1,5 +1,5 @@
 /* eslint-disable */
- // FILE: components/kid/kid-home-layout.tsx
+// FILE: components/kid/kid-home-layout.tsx
 
 import React, { useState } from "react";
 import { Search, Bell, HelpCircle, Menu } from "lucide-react";
@@ -23,6 +23,7 @@ import { KidSidebar } from "./kid-sidebar";
 import { CourseCard } from "./course-card";
 import { UserDetailsPanel } from "./user-details-panel";
 import { KidUserNav } from "./kid-user-nav";
+import Loading from "@/app/loading";
 
 // --- FIX: The props interface now correctly includes all expected props ---
 interface KidHomeLayoutProps {
@@ -36,6 +37,7 @@ interface KidHomeLayoutProps {
   gradeLevels: { id: string; name: string }[];
   selectedGrade: string;
   onSelectGrade: (gradeId: string) => void;
+  loading?: boolean;
 }
 
 export default function KidHomeLayout({
@@ -49,6 +51,7 @@ export default function KidHomeLayout({
   gradeLevels,
   selectedGrade,
   onSelectGrade,
+  loading = false,
 }: KidHomeLayoutProps) {
   const [showUserDetails, setShowUserDetails] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -76,10 +79,14 @@ export default function KidHomeLayout({
   return (
     <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-900">
       <div className="flex h-screen">
-        <div className="hidden lg:block lg:w-64 border-r dark:border-slate-800 bg-white dark:bg-slate-900/50">
-          <KidSidebar />
-        </div>
-        <div className="flex-1 flex flex-col overflow-hidden">
+        {/* ...existing sidebar... */}
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          {/* Loading overlay for grade selection/search */}
+          {loading && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+              <Loading />
+            </div>
+          )}
           {/* Hide header on small screens */}
           <header className="hidden md:flex sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b dark:border-slate-800 p-4">
             <div className="flex items-center justify-between">

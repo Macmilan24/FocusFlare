@@ -101,6 +101,7 @@ export default function KidHomePage() {
       gradeLevels={gradeLevels}
       selectedGrade={selectedGrade}
       onSelectGrade={setSelectedGrade}
+      loading={loading}
     />
   );
 }

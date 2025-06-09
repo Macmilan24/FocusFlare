@@ -11,17 +11,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { signOut } from "next-auth/react";
 import Link from "next/link";
 import { LogOut, UserCircle, Gem, Award, Zap } from "lucide-react";
 import type { User } from "next-auth";
+import { handleSignOut } from "@/actions/auth.actions"; // <-- IMPORT YOUR SERVER ACTION
 
 interface KidUserNavProps {
   user: Pick<User, "name" | "image" | "email"> & {
     username?: string | null;
     points?: number | null;
     id?: string;
-  }; // User from session
+  };
 }
 
 export function KidUserNav({ user }: KidUserNavProps) {
@@ -36,74 +36,66 @@ export function KidUserNav({ user }: KidUserNavProps) {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-10 w-10 sm:h-11 sm:w-11 rounded-full aspect-square p-0 focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring-kid))]"
+          className="relative h-10 w-10 sm:h-11 sm:w-11 rounded-full p-0"
         >
-          <Avatar className="h-full w-full aspect-square rounded-full overflow-hidden border-2 border-[hsl(var(--primary-kid))] bg-white">
+          <Avatar className="h-full w-full border-2 border-[hsl(var(--primary-kid))]">
             <AvatarImage
               src={user.image || undefined}
               alt={user.username || user.name || "User"}
-              className="object-cover h-full w-full rounded-full"
             />
-            <AvatarFallback className="bg-[hsl(var(--primary-kid))]/20 text-[hsl(var(--primary-kid))] font-bold text-lg rounded-full">
+            <AvatarFallback className="bg-[hsl(var(--primary-kid))]/20 text-[hsl(var(--primary-kid))] font-bold text-lg">
               {initials}
             </AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        className="w-60 bg-white text-[hsl(var(--popover-foreground-kid))] border-[hsl(var(--border-kid))]"
-        align="end"
-        forceMount
-      >
+      <DropdownMenuContent className="w-60" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1 p-1">
-            <p className="text-md font-bold leading-none text-[hsl(var(--foreground-kid))]">
+            <p className="text-md font-bold leading-none">
               {user.username || user.name}
             </p>
             {user.points !== undefined && (
-              <p className="text-xs leading-none text-[hsl(var(--muted-kid-foreground))] flex items-center">
-                <Gem className="h-3 w-3 mr-1.5 text-[hsl(var(--accent-kid))]" />{" "}
-                {user.points} Points
+              <p className="text-xs leading-none text-muted-foreground flex items-center">
+                <Gem className="h-3 w-3 mr-1.5 text-orange-400" /> {user.points}{" "}
+                Points
               </p>
             )}
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-[hsl(var(--border-kid))]" />
+        <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <Link href="/kid/home" passHref>
-            <DropdownMenuItem className="cursor-pointer hover:bg-[hsl(var(--accent-kid))]/10 focus:bg-[hsl(var(--accent-kid))]/20">
-              <Zap className="mr-2 h-4 w-4 text-[hsl(var(--primary-kid))]" />
+            <DropdownMenuItem className="cursor-pointer">
+              <Zap className="mr-2 h-4 w-4" />
               <span>My Hub</span>
             </DropdownMenuItem>
           </Link>
           <Link href="/kid/profile/edit" passHref>
-            {" "}
-            {/* Placeholder for kid's profile */}
-            <DropdownMenuItem className="cursor-pointer hover:bg-[hsl(var(--accent-kid))]/10 focus:bg-[hsl(var(--accent-kid))]/20">
-              <UserCircle className="mr-2 h-4 w-4 text-[hsl(var(--primary-kid))]" />
+            <DropdownMenuItem className="cursor-pointer">
+              <UserCircle className="mr-2 h-4 w-4" />
               <span>My Profile</span>
             </DropdownMenuItem>
           </Link>
           <Link href="/kid/badges" passHref>
-            {" "}
-            {/* Placeholder */}
-            <DropdownMenuItem className="cursor-pointer hover:bg-[hsl(var(--accent-kid))]/10 focus:bg-[hsl(var(--accent-kid))]/20">
-              <Award className="mr-2 h-4 w-4 text-[hsl(var(--primary-kid))]" />
+            <DropdownMenuItem className="cursor-pointer">
+              <Award className="mr-2 h-4 w-4" />
               <span>My Badges</span>
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>
-        <DropdownMenuSeparator className="bg-[hsl(var(--border-kid))]" />
-        <Button
-          type="button"
-          className="w-full text-left p-0"
-          onClick={() => signOut({ callbackUrl: "/auth/signin" })}
-        >
-          <DropdownMenuItem className="cursor-pointer text-red-500 dark:text-red-400 focus:bg-red-500/10 focus:text-red-500 dark:focus:text-red-300">
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Switch User / Sign Out</span>
+        <DropdownMenuSeparator />
+        <form action={handleSignOut} className="w-full">
+          <DropdownMenuItem asChild>
+            <button
+              type="submit"
+              className="w-full cursor-pointer text-red-500 focus:bg-red-500/10 focus:text-red-600"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Switch User / Sign Out</span>
+            </button>
           </DropdownMenuItem>
-        </Button>
+        </form>
       </DropdownMenuContent>
     </DropdownMenu>
   );
