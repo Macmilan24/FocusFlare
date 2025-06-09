@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { SessionProvider } from "@/components/providers/session-provider";
+import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
-  title: "Focus Flare",
-  description: "Learning for kids with ADHD",
+  title: "FocusFlare",
 };
 
 export default function RootLayout({
@@ -27,7 +26,9 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <SessionProvider>{children}</SessionProvider>
+        <SessionProvider refetchOnWindowFocus={false}>
+          {children}
+        </SessionProvider>
       </body>
     </html>
   );
