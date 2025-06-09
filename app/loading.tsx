@@ -1,4 +1,3 @@
-// Next.js 13+ loading page using Lottie animation
 "use client";
 import React from "react";
 import dynamic from "next/dynamic";

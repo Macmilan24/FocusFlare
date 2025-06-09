@@ -5,19 +5,16 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   getKidHomePageData,
   getKidGamificationStats,
+  getGradeLevels,
 } from "@/actions/kid.actions";
-import type { KidData } from "@/types/kid";
+import type { KidData, DailyActivity } from "@/types/kid";
 import KidHomeLayout from "@/components/kid/kid-home-layout";
-
-// A simple loading component
-const LoadingState = () => (
-  <div className="p-8 text-center text-lg text-muted-foreground">
-    Loading dashboard...
-  </div>
-);
+import Loading from "@/app/loading"; // Use the animated loading component
 
 export default function KidHomePage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedGrade, setSelectedGrade] = useState<string>("all");
+  const [gradeLevels, setGradeLevels] = useState<{ id: string; name: string }[]>([]);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [gamificationStats, setGamificationStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -28,17 +25,20 @@ export default function KidHomePage() {
     setLoading(true);
     setError(null);
     const dateStr = selectedDate.toISOString();
+    const gradeLevelId = selectedGrade === "all" ? undefined : selectedGrade;
 
     Promise.all([
-      getKidHomePageData(), // This usually doesn't need to change with the date
+      getKidHomePageData({ gradeLevelId }), // Pass selected grade filter
       getKidGamificationStats(dateStr),
+      getGradeLevels(),
     ])
-      .then(([homePageDataResult, gamificationStatsResult]) => {
+      .then(([homePageDataResult, gamificationStatsResult, gradesResult]) => {
         if (!homePageDataResult?.kidData?.id) {
           setError("Could not load kid's data. Please try again later.");
         } else {
           setDashboardData(homePageDataResult);
           setGamificationStats(gamificationStatsResult);
+          setGradeLevels(gradesResult);
         }
       })
       .catch((err) => {
@@ -48,7 +48,7 @@ export default function KidHomePage() {
       .finally(() => {
         setLoading(false);
       });
-  }, [selectedDate]); // Dependency array ensures this runs when date changes
+  }, [selectedDate, selectedGrade]); // Dependency array ensures this runs when date or grade changes
 
   // useMemo helps prevent re-calculating this complex object on every render
   const fullKidData: KidData | null = useMemo(() => {
@@ -70,8 +70,11 @@ export default function KidHomePage() {
     };
   }, [dashboardData, gamificationStats]);
 
+  const dailyActivityData: DailyActivity[] =
+    gamificationStats?.dailyActivityChartData || [];
+
   if (loading && !fullKidData) {
-    return <LoadingState />;
+    return <Loading />;
   }
 
   if (error) {
@@ -88,13 +91,16 @@ export default function KidHomePage() {
 
   return (
     <KidHomeLayout
-      kidData={fullKidData}
+      kidData={fullKidData!}
       continueAdventures={dashboardData.continueLearning || []}
       recommendedItems={dashboardData.recommendedItems || []}
       subjectSections={dashboardData.subjectSections || {}}
-      dailyActivityData={gamificationStats?.dailyActivityChartData || []}
+      dailyActivityData={dailyActivityData}
       selectedDate={selectedDate}
       onDateChange={setSelectedDate}
+      gradeLevels={gradeLevels}
+      selectedGrade={selectedGrade}
+      onSelectGrade={setSelectedGrade}
     />
   );
 }

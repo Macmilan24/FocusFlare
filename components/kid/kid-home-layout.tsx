@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-// FILE: components/kid/kid-home-layout.tsx
+/* eslint-disable */
+ // FILE: components/kid/kid-home-layout.tsx
 
 import React, { useState } from "react";
 import { Search, Bell, HelpCircle, Menu } from "lucide-react";
@@ -12,12 +12,19 @@ import type {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { KidSidebar } from "./kid-sidebar";
 import { CourseCard } from "./course-card";
 import { UserDetailsPanel } from "./user-details-panel";
 import { KidUserNav } from "./kid-user-nav";
 
-// Updated props to include everything our new panel needs
+// --- FIX: The props interface now correctly includes all expected props ---
 interface KidHomeLayoutProps {
   kidData: KidData;
   continueAdventures: ContinueLearningItem[];
@@ -26,25 +33,55 @@ interface KidHomeLayoutProps {
   dailyActivityData: DailyActivity[];
   selectedDate: Date;
   onDateChange: (date: Date) => void;
+  gradeLevels: { id: string; name: string }[];
+  selectedGrade: string;
+  onSelectGrade: (gradeId: string) => void;
 }
 
 export default function KidHomeLayout({
   kidData,
   continueAdventures,
   recommendedItems,
+  subjectSections,
   dailyActivityData,
   selectedDate,
   onDateChange,
+  gradeLevels,
+  selectedGrade,
+  onSelectGrade,
 }: KidHomeLayoutProps) {
   const [showUserDetails, setShowUserDetails] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const searchActive = searchQuery.trim().length > 0;
+
+  // --- FIX: Explicitly type allItems to help TypeScript understand the combined array ---
+  const allItems: (ContinueLearningItem | RecommendedItem)[] = [
+    ...continueAdventures,
+    ...recommendedItems,
+    ...Object.values(subjectSections).flat(),
+  ];
+
+  // The type of searchResults is now correctly inferred
+  const searchResults = searchActive
+    ? allItems.filter(
+        (item) =>
+          item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (item.description || "")
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())
+      )
+    : [];
+
   return (
     <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-900">
       <div className="flex h-screen">
+        <div className="hidden lg:block lg:w-64 border-r dark:border-slate-800 bg-white dark:bg-slate-900/50">
+          <KidSidebar />
+        </div>
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
-          <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b dark:border-slate-800 p-4">
+          {/* Hide header on small screens */}
+          <header className="hidden md:flex sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b dark:border-slate-800 p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sheet>
@@ -65,6 +102,19 @@ export default function KidHomeLayout({
                     className="pl-10 w-48 md:w-64"
                   />
                 </div>
+                <Select value={selectedGrade} onValueChange={onSelectGrade}>
+                  <SelectTrigger className="w-[150px] hidden md:flex">
+                    <SelectValue placeholder="Filter by Grade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Grades</SelectItem>
+                    {gradeLevels.map((grade) => (
+                      <SelectItem key={grade.id} value={grade.id}>
+                        {grade.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -92,8 +142,6 @@ export default function KidHomeLayout({
               </div>
             </div>
           </header>
-
-          {/* Main Content Area */}
           <div className="flex flex-1 overflow-hidden relative">
             <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
@@ -108,33 +156,52 @@ export default function KidHomeLayout({
                   View Profile
                 </Button>
               </div>
-
-              {/* Your existing sections for learning content... */}
-              {continueAdventures.length > 0 && (
-                <section className="mb-8">
-                  <h2 className="text-xl font-bold mb-4">Continue Learning</h2>
-                  <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
-                    {continueAdventures.map((course) => (
-                      <CourseCard key={course.id} course={course} />
-                    ))}
-                  </div>
-                </section>
-              )}
-              {recommendedItems.length > 0 && (
-                <section className="mb-8">
+              {searchActive ? (
+                <section>
                   <h2 className="text-xl font-bold mb-4">
-                    Recommended For You
+                    Search Results for "{searchQuery}"
                   </h2>
-                  <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
-                    {recommendedItems.map((course) => (
-                      <CourseCard key={course.id} course={course} />
-                    ))}
-                  </div>
+                  {searchResults.length > 0 ? (
+                    <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+                      {searchResults.map((item) => (
+                        <CourseCard key={`${item.id}-search`} course={item} />
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      No adventures found.
+                    </p>
+                  )}
                 </section>
+              ) : (
+                <>
+                  {continueAdventures.length > 0 && (
+                    <section className="mb-8">
+                      <h2 className="text-xl font-bold mb-4">
+                        Continue Learning
+                      </h2>
+                      <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+                        {continueAdventures.map((course) => (
+                          <CourseCard key={course.id} course={course} />
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                  {recommendedItems.length > 0 && (
+                    <section className="mb-8">
+                      <h2 className="text-xl font-bold mb-4">
+                        Recommended For You
+                      </h2>
+                      <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
+                        {recommendedItems.map((course) => (
+                          <CourseCard key={course.id} course={course} />
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </>
               )}
             </main>
-
-            {/* The UserDetailsPanel now receives all the data it needs */}
             <UserDetailsPanel
               kidData={kidData}
               dailyActivityData={dailyActivityData}
