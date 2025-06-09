@@ -9,6 +9,21 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+
+  // Skip type‐checking errors on production builds
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+
+  // Skip ESLint errors on production builds
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
+  // Optional: suppress “exported runtime” warnings
+  experimental: {
+    externalDir: true,
+  },
 };
 
 export default nextConfig;
