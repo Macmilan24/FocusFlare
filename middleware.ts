@@ -1,84 +1,69 @@
-import { getToken } from "next-auth/jwt";
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+// FILE: middleware.ts
+
+import NextAuth from "next-auth";
+import authConfig from "@/lib/auth.config";
 import { Role } from "@prisma/client";
 
-export async function middleware(req: NextRequest) {
-  const secret = process.env.AUTH_SECRET;
+const { auth } = NextAuth(authConfig);
 
-  const token = await getToken({ req, secret });
+export default auth((req) => {
+  const { nextUrl } = req;
+  const isLoggedIn = !!req.auth;
+  const userRole = req.auth?.user?.role;
 
-  console.log("[MIDDLEWARE] Pathname:", req.nextUrl.pathname);
-  console.log("[MIDDLEWARE] Decoded Token:", token);
+  const isAuthRoute = nextUrl.pathname.startsWith("/auth");
+  const isParentRoute = nextUrl.pathname.startsWith("/parent");
+  const isKidRoute = nextUrl.pathname.startsWith("/kid");
 
-  const isLoggedIn = !!token;
-  const { pathname } = req.nextUrl;
+  console.log(
+    "[MIDDLEWARE] Path:",
+    nextUrl.pathname,
+    "isLoggedIn:",
+    isLoggedIn,
+    "Role:",
+    userRole
+  );
 
-  // --- REDIRECT LOGGED-IN USERS FROM ROOT OR OLD DASHBOARD TO ROLE-SPECIFIC OVERVIEW ---
-  if (
-    isLoggedIn &&
-    (pathname === "/" ||
-      pathname === "/parent/home") /* handle old path if it exists briefly */
-  ) {
-    if (token.role === Role.PARENT) {
-      console.log(
-        "[MIDDLEWARE] Redirecting PARENT from root/old-home to /parent/overview"
-      );
-      return NextResponse.redirect(new URL("/parent/overview", req.url));
-    } else if (token.role === Role.CHILD) {
-      console.log("[MIDDLEWARE] Redirecting CHILD from root to /kid/home");
-      return NextResponse.redirect(new URL("/kid/home", req.url));
-    } else {
-      return NextResponse.next();
+  // If trying to access auth pages (signin/register) while logged in, redirect to the correct dashboard.
+  if (isAuthRoute && isLoggedIn) {
+    if (userRole === Role.PARENT) {
+      return Response.redirect(new URL("/parent/overview", nextUrl));
     }
+    if (userRole === Role.CHILD) {
+      return Response.redirect(new URL("/kid/home", nextUrl));
+    }
+    // Fallback for any other role, though unlikely
+    return Response.redirect(new URL("/", nextUrl));
   }
 
-  // --- PROTECT PLATFORM-SPECIFIC ROUTES ---
-
-  const isPlatformRoute =
-    pathname.startsWith("/parent") || pathname.startsWith("/kid");
-
-  if (isPlatformRoute && !isLoggedIn) {
-    console.log(
-      "[MIDDLEWARE] User not logged in, redirecting to signin from protected route:",
-      pathname
-    );
-    const signInUrl = new URL("/auth/signin", req.url);
-    signInUrl.searchParams.set("callbackUrl", req.url);
-    return NextResponse.redirect(signInUrl);
+  // If trying to access a protected parent route
+  if (isParentRoute) {
+    if (!isLoggedIn) return Response.redirect(new URL("/auth/signin", nextUrl));
+    if (userRole !== Role.PARENT)
+      return Response.redirect(new URL("/unauthorized", nextUrl)); // Or redirect to their own dashboard
   }
 
-  // --- ROLE-BASED ACCESS CONTROL FOR PLATFORM ROUTES (Optional but good practice) ---
-  if (isLoggedIn && isPlatformRoute) {
-    if (pathname.startsWith("/parent") && token.role !== Role.PARENT) {
-      console.log(
-        "[MIDDLEWARE] Non-PARENT trying to access PARENT route. Redirecting."
-      );
-      return NextResponse.redirect(new URL("/kid/home", req.url));
-    }
-    if (pathname.startsWith("/kid") && token.role !== Role.CHILD) {
-      return NextResponse.redirect(new URL("/parent/overview", req.url));
-    }
+  // If trying to access a protected kid route
+  if (isKidRoute) {
+    if (!isLoggedIn) return Response.redirect(new URL("/auth/signin", nextUrl));
+    if (userRole !== Role.CHILD)
+      return Response.redirect(new URL("/unauthorized", nextUrl)); // Or redirect to their own dashboard
   }
 
-  // --- REDIRECT LOGGED-IN USERS AWAY FROM AUTH PAGES (SIGNIN/REGISTER) ---
-  if (
-    isLoggedIn &&
-    (pathname.startsWith("/auth/signin") ||
-      pathname.startsWith("/auth/register"))
-  ) {
-    if (token.role === Role.PARENT) {
-      return NextResponse.redirect(new URL("/parent/overview", req.url));
-    } else if (token.role === Role.CHILD) {
-      return NextResponse.redirect(new URL("/kid/home", req.url));
-    } else {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
+  // If a logged-in user lands on the root, redirect them
+  if (nextUrl.pathname === "/" && isLoggedIn) {
+    if (userRole === Role.PARENT)
+      return Response.redirect(new URL("/parent/overview", nextUrl));
+    if (userRole === Role.CHILD)
+      return Response.redirect(new URL("/kid/home", nextUrl));
   }
 
-  return NextResponse.next();
-}
+  // Allow the request to proceed if no rules matched
+  return;
+});
 
+// This config prevents the middleware from running on static files and API routes.
+// It's crucial for performance and correctness.
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)", "/"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };
