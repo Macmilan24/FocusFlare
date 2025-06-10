@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "FocusFlare",
@@ -28,6 +30,8 @@ export default function RootLayout({
       <body>
         <SessionProvider refetchOnWindowFocus={false}>
           {children}
+          <Analytics />
+          <SpeedInsights />
         </SessionProvider>
       </body>
     </html>
