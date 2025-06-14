@@ -10,10 +10,14 @@ interface StoryDetailsPageProps {
   params: {
     storyId: string;
   };
+  searchParams?: {
+    courseId?: string;
+  };
 }
 
 export default async function StoryDetailsPage({
   params,
+  searchParams,
 }: StoryDetailsPageProps) {
   const session = await auth();
   if (!session?.user) {
@@ -22,6 +26,8 @@ export default async function StoryDetailsPage({
 
   const { storyId } = params;
   const { story, error } = await getStoryById(storyId);
+
+  const courseId = searchParams?.courseId;
 
   if (error) {
     return (
@@ -56,5 +62,5 @@ export default async function StoryDetailsPage({
   }
 
   // Render the new StoryViewer component with the fetched story data
-  return <StoryViewer story={story} />;
+  return <StoryViewer story={story} courseId={courseId} />;
 }

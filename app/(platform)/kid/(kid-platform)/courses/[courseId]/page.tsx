@@ -82,6 +82,7 @@ const AdventureStep = ({
   item,
   isLast,
   isCurrent,
+  courseId,
 }: {
   item: NonNullable<
     NonNullable<
@@ -90,6 +91,7 @@ const AdventureStep = ({
   >[0];
   isLast: boolean;
   isCurrent: boolean;
+  courseId?: string;
 }) => {
   const isCompleted = item.status === "completed" || item.status === "passed";
   const status: StepStatus = isCompleted
@@ -99,6 +101,12 @@ const AdventureStep = ({
     : "locked";
   const styles = getStepStatusStyles(status);
   const IconComponent = getContentTypeIcon(item.contentType);
+
+  const finalHref =
+    item.contentType === ContentType.STORY ||
+    item.contentType === ContentType.QUIZ
+      ? `${item.link}?courseId=${courseId}`
+      : item.link;
 
   const StepContent = (
     <div
@@ -136,7 +144,7 @@ const AdventureStep = ({
   return (
     <li>
       {status !== "locked" ? (
-        <Link href={item.link} className="block">
+        <Link href={finalHref} className="block">
           {StepContent}
         </Link>
       ) : (
@@ -182,9 +190,28 @@ export default async function NewCourseDetailPage({
   let currentStepIndex = items.findIndex(
     (item) => item.status !== "completed" && item.status !== "passed"
   );
-  if (currentStepIndex === -1 && items.length > 0) currentStepIndex = 0; // If all are done, point to first for review
-  const continueLink =
-    items[currentStepIndex]?.link || (items.length > 0 ? items[0].link : "#");
+  if (currentStepIndex === -1 && items.length > 0) currentStepIndex = 0;
+  let continueLink = "#";
+  const currentItem = items[currentStepIndex];
+
+  if (currentItem) {
+    const isLinkableContent =
+      currentItem.contentType === ContentType.STORY ||
+      currentItem.contentType === ContentType.QUIZ;
+
+    continueLink = isLinkableContent
+      ? `${currentItem.link}?courseId=${params.courseId}`
+      : currentItem.link;
+  } else if (items.length > 0) {
+    const firstItem = items[0];
+    const isLinkableContent =
+      firstItem.contentType === ContentType.STORY ||
+      firstItem.contentType === ContentType.QUIZ;
+
+    continueLink = isLinkableContent
+      ? `${firstItem.link}?courseId=${params.courseId}`
+      : firstItem.link;
+  }
 
   return (
     <div
@@ -226,6 +253,7 @@ export default async function NewCourseDetailPage({
                     index={index}
                     isLast={index === items.length - 1}
                     isCurrent={index === currentStepIndex}
+                    courseId={params.courseId}
                   />
                 ))}
               </ul>

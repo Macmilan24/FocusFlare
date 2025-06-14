@@ -12,10 +12,14 @@ interface QuizDetailsPageProps {
   params: {
     quizId: string;
   };
+  searchParams?: {
+    courseId?: string;
+  };
 }
 
 export default async function QuizDetailsPage({
   params,
+  searchParams,
 }: QuizDetailsPageProps) {
   const session = await auth();
   if (!session?.user) {
@@ -24,6 +28,8 @@ export default async function QuizDetailsPage({
 
   const { quizId } = params;
   const { quiz, error } = await getQuizById(quizId);
+
+  const courseId = searchParams?.courseId;
 
   if (error) {
     return (
@@ -67,5 +73,5 @@ export default async function QuizDetailsPage({
     );
   }
 
-  return <QuizView quiz={quiz} />;
+  return <QuizView quiz={quiz} courseId={courseId} />;
 }

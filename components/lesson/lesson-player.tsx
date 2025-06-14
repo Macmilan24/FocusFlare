@@ -135,6 +135,43 @@ export function LessonPlayer({
   const overallProgress =
     allBlocks.length > 0 ? (completedBlocks.size / allBlocks.length) * 100 : 0;
 
+  // You can place this helper function at the top of your file or in a separate helpers file.
+  function getEmbedUrl(url: string): {
+    type: "youtube" | "direct";
+    src: string;
+  } {
+    if (!url) {
+      return { type: "direct", src: "" };
+    }
+
+    let videoId: string | null = null;
+
+    // Regular youtube.com/watch?v=...
+    const urlParams = new URLSearchParams(new URL(url).search);
+    if (url.includes("youtube.com/watch")) {
+      videoId = urlParams.get("v");
+    }
+    // Shortened youtu.be/...
+    else if (url.includes("youtu.be")) {
+      videoId = new URL(url).pathname.slice(1);
+    }
+    // Embed links youtube.com/embed/...
+    else if (url.includes("youtube.com/embed")) {
+      videoId = new URL(url).pathname.split("/")[2];
+    }
+
+    if (videoId) {
+      return {
+        type: "youtube",
+        // Add privacy-enhanced mode and other useful params
+        src: `https://www.youtube-nocookie.com/embed/${videoId}?rel=0&showinfo=0`,
+      };
+    }
+
+    // If it's not a recognized YouTube URL, assume it's a direct video link (Cloudinary, etc.)
+    return { type: "direct", src: url };
+  }
+
   // --- RENDER FUNCTIONS AND JSX ---
 
   const renderBlockContent = (block: LessonBlock) => {
@@ -189,7 +226,8 @@ export function LessonPlayer({
                 <Image
                   src={block.url || "/placeholder.svg"}
                   alt={block.alt || blockTitle}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
                 />
               </AspectRatio>
             </CardContent>
@@ -204,6 +242,7 @@ export function LessonPlayer({
         );
 
       case "video":
+        const video = getEmbedUrl(block.url || "");
         return (
           <Card className="border-0 shadow-md">
             <CardHeader>
@@ -217,15 +256,21 @@ export function LessonPlayer({
                 ratio={16 / 9}
                 className="bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center"
               >
-                {/* For real videos, you'd use an iframe pointing to block.url */}
-                <iframe
-                  src={block.url} // Assuming URL is an embeddable link (e.g., from YouTube, Vimeo)
-                  title={lesson.title}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full"
-                ></iframe>
+                {/* ✨ Conditional rendering based on video type */}
+                {video.type === "youtube" ? (
+                  <iframe
+                    src={video.src}
+                    title={block.alt || lesson.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                  ></iframe>
+                ) : (
+                  <video src={video.src} controls className="w-full h-full">
+                    Your browser does not support the video tag.
+                  </video>
+                )}
               </AspectRatio>
             </CardContent>
           </Card>
@@ -362,7 +407,10 @@ export function LessonPlayer({
                 <span>Overall Progress</span>
                 <span>{Math.round(overallProgress)}%</span>
               </div>
-              <Progress value={overallProgress} className="h-2 bg-orange-100 [&>div]:bg-orange-400" />
+              <Progress
+                value={overallProgress}
+                className="h-2 bg-orange-100 [&>div]:bg-orange-400"
+              />
             </div>
           </div>
         </div>

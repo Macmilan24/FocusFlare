@@ -38,9 +38,10 @@ const letterBadges = ["A", "B", "C", "D", "E"];
 
 interface QuizViewProps {
   quiz: QuizData;
+  courseId?: string | null;
 }
 
-export default function QuizView({ quiz }: QuizViewProps) {
+export default function QuizView({ quiz, courseId }: QuizViewProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<
     Record<string, string>
@@ -125,6 +126,10 @@ export default function QuizView({ quiz }: QuizViewProps) {
     if (score >= 60) return "Great Work!";
     return "Good Effort!";
   };
+
+  const backLinkHref = courseId ? `/kid/courses/${courseId}` : "/kid/quizzes";
+  const backLinkText = courseId ? "Back to Course" : "More Quizzes";
+  const backLinkTextInline = courseId ? "Back to Course" : "Back to Quizzes";
 
   // --- RESULTS VIEW ---
   if (quizCompleted && submissionResult) {
@@ -217,9 +222,9 @@ export default function QuizView({ quiz }: QuizViewProps) {
               >
                 <RotateCcw className="mr-2 h-4 w-4" /> Try Again
               </Button>
-              <Link href="/kid/quizzes" className="w-full sm:w-1/2">
+              <Link href={backLinkHref} className="w-full sm:w-1/2">
                 <Button className="w-full bg-[#FF4500] hover:bg-[#FF4500]/90 text-white">
-                  <BookOpen className="mr-2 h-4 w-4" /> More Quizzes
+                  <BookOpen className="mr-2 h-4 w-4" /> {backLinkText}
                 </Button>
               </Link>
             </CardFooter>
@@ -320,10 +325,11 @@ export default function QuizView({ quiz }: QuizViewProps) {
         </Card>
         <div className="mt-6 text-center">
           <Link
-            href="/kid/quizzes"
+            href={backLinkHref}
             className="inline-flex items-center text-sm text-purple-600 hover:text-purple-800"
           >
-            <ChevronRight className="h-4 w-4 rotate-180 mr-1" /> Back to Quizzes
+            <ChevronRight className="h-4 w-4 rotate-180 mr-1" />{" "}
+            {backLinkTextInline}
           </Link>
         </div>
       </div>

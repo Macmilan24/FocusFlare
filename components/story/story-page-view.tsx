@@ -30,9 +30,10 @@ import { Progress } from "@/components/ui/progress";
 
 interface StoryViewerProps {
   story: StoryPageContent;
+  courseId?: string;
 }
 
-export default function StoryViewer({ story }: StoryViewerProps) {
+export default function StoryViewer({ story, courseId }: StoryViewerProps) {
   const [currentPage, setCurrentPage] = useState(0);
   const [isCompleting, startCompletionTransition] = useTransition();
 
@@ -76,6 +77,9 @@ export default function StoryViewer({ story }: StoryViewerProps) {
   };
 
   const currentPageData = story.pages[currentPage];
+
+  const backLinkHref = courseId ? `/kid/courses/${courseId}` : "/kid/stories";
+  const backLinkText = courseId ? "← Back to Course" : "← Back to All Stories";
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-4 flex flex-col items-center justify-center">
@@ -172,10 +176,10 @@ export default function StoryViewer({ story }: StoryViewerProps) {
 
       <div className="mt-6">
         <Link
-          href="/kid/stories"
+          href={backLinkHref}
           className="text-muted-foreground hover:text-primary transition-colors"
         >
-          ← Back to All Stories
+          {backLinkText}
         </Link>
       </div>
     </div>
