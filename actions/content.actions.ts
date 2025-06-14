@@ -157,6 +157,8 @@ export async function getStorySubjects(): Promise<string[]> {
   }
 }
 
+// FILE: actions/content.actions.ts
+
 export async function getStoriesList(params: {
   query?: string;
   subject?: string;
@@ -178,7 +180,7 @@ export async function getStoriesList(params: {
     if (query) {
       whereClause.title = {
         contains: query,
-        mode: "insensitive", // Case-insensitive search
+        mode: "insensitive",
       };
     }
     if (subject) {
@@ -192,7 +194,7 @@ export async function getStoriesList(params: {
     const storyContents = await prisma.learningContent.findMany({
       where: whereClause,
       orderBy: {
-        createdAt: "desc", // Show newest first
+        createdAt: "desc",
       },
       skip: (page - 1) * limit,
       take: limit,
@@ -200,9 +202,8 @@ export async function getStoriesList(params: {
         id: true,
         title: true,
         description: true,
-        content: true,
+        coverImageUrl: true,
         course: {
-          // Include course data
           select: {
             id: true,
             title: true,
@@ -210,24 +211,7 @@ export async function getStoriesList(params: {
         },
       },
     });
-
-    const stories: StoryListItem[] = storyContents.map((item) => {
-      let coverImageUrl = null;
-      if (
-        item.content &&
-        typeof item.content === "object" &&
-        "coverImageUrl" in item.content
-      ) {
-        coverImageUrl = (item.content as any).coverImageUrl as string | null;
-      }
-      return {
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        coverImageUrl: coverImageUrl,
-        course: item.course, // Add course data to the returned object
-      };
-    });
+    const stories: StoryListItem[] = storyContents;
 
     return {
       stories,
@@ -239,7 +223,6 @@ export async function getStoriesList(params: {
     return { error: "Failed to fetch stories." };
   }
 }
-
 export async function getStoryById(
   storyId: string
 ): Promise<{ story?: StoryPageContent; error?: string }> {
