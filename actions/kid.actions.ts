@@ -364,7 +364,7 @@ export async function getKidProfileData(): Promise<Omit<
         id: true,
         name: true,
         username: true,
-        image: true,
+        avatarUrl: true, // Changed from image: true to avatarUrl: true
         points: true,
       },
     });
@@ -378,7 +378,7 @@ export async function getKidProfileData(): Promise<Omit<
         user.username ??
         user.name?.toLowerCase().replace(/\s+/g, "") ??
         "explorer",
-      avatarUrl: typeof user.image === "string" ? user.image : undefined,
+      avatarUrl: user.avatarUrl ?? undefined, // Directly use user.avatarUrl
       points: user.points ?? 0,
     };
   } catch (error) {

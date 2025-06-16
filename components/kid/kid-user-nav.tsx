@@ -21,6 +21,7 @@ interface KidUserNavProps {
     username?: string | null;
     points?: number | null;
     id?: string;
+    avatarUrl?: string | null; // Ensure avatarUrl is part of the type
   };
 }
 
@@ -40,7 +41,7 @@ export function KidUserNav({ user }: KidUserNavProps) {
         >
           <Avatar className="h-full w-full border-2 border-[hsl(var(--primary-kid))]">
             <AvatarImage
-              src={user.image || undefined}
+              src={user.avatarUrl || user.image || undefined} // Prioritize avatarUrl
               alt={user.username || user.name || "User"}
             />
             <AvatarFallback className="bg-[hsl(var(--primary-kid))]/20 text-[hsl(var(--primary-kid))] font-bold text-lg">

@@ -1,7 +1,15 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, BookOpen, Book, Trophy, Award, Settings } from "lucide-react";
+import {
+  Home,
+  BookOpen,
+  Book,
+  Trophy,
+  Award,
+  Settings,
+  BarChartBig,
+} from "lucide-react";
 import Image from "next/image";
 
 const navigationItems = [
@@ -10,6 +18,7 @@ const navigationItems = [
   { title: "Stories", icon: Book, href: "/kid/stories" },
   { title: "Quizzes", icon: Trophy, href: "/kid/quizzes" },
   { title: "Badges", icon: Award, href: "/kid/badges" },
+  { title: "Leaderboard", icon: BarChartBig, href: "/kid/leaderboard" },
   { title: "Settings", icon: Settings, href: "/kid/profile/edit" },
 ];
 

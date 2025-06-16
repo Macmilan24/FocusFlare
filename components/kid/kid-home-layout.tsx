@@ -27,7 +27,7 @@ import Loading from "@/app/loading";
 
 // --- FIX: The props interface now correctly includes all expected props ---
 interface KidHomeLayoutProps {
-  kidData: KidData;
+  kidData: KidData; // This already includes avatarUrl
   continueAdventures: ContinueLearningItem[];
   recommendedItems: RecommendedItem[];
   subjectSections: Record<string, RecommendedItem[]>;
@@ -138,7 +138,14 @@ export default function KidHomeLayout({
                 >
                   <Bell className="h-5 w-5" />
                 </Button>
-                <KidUserNav user={{ ...kidData, email: kidData.username }} />
+                {/* Pass the full kidData which includes avatarUrl */}
+                <KidUserNav
+                  user={{
+                    ...kidData,
+                    email: kidData.username || kidData.name,
+                    image: kidData.avatarUrl,
+                  }}
+                />
                 <Button
                   onClick={() => setShowUserDetails(true)}
                   variant="outline"
