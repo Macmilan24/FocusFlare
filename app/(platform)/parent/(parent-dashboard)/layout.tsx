@@ -4,7 +4,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator"; // Keep if used, otherwise can remove
 import { UserNav } from "@/components/layout/user-nav"; // For the header
-import { Sparkles } from "lucide-react"; // For logo in header
+import Image from "next/image";
+
 export interface NavItem {
   title: string;
   href: string;
@@ -35,9 +36,13 @@ export default function ParentDashboardLayout({
             href="/parent/overview"
             className="flex items-center space-x-2 text-lg font-semibold text-primary hover:opacity-80 transition-opacity"
           >
-            <Sparkles className="h-6 w-6" />{" "}
-            {/* Or your specific parent portal logo */}
-            <span>Parent Portal</span>
+            <Image
+              src="/Logo/logo.png"
+              alt="FocusFlare Logo"
+              width={240}
+              height={240}
+            />
+            <span className="hidden sm:inline">Parent Portal</span>
           </Link>
           <div className="flex items-center space-x-4">
             {/* Any other parent-specific top nav items can go here */}

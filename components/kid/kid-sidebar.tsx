@@ -30,19 +30,17 @@ export const KidSidebar = () => {
     <div className="h-full w-64 border-r border-orange-100 bg-white flex flex-col">
       {/* Logo/Brand */}
       <div className="p-6 border-b border-orange-100">
-        <div className="flex flex-col items-center justify-center">
-          <div className="w-full h-full rounded-2xl flex items-center justify-center bg-white overflow-hidden mb-2 shadow-lg">
-            <Image
-              src="/Logo/logo.jpg"
-              alt="FocusFlare Logo"
-              width={80}
-              height={80}
-              quality={100}
-              className="w-full h-full object-contain"
-              priority
-            />
-          </div>
-        </div>
+        <Link
+          href="/kid/home"
+          className="flex flex-col items-center justify-center"
+        >
+          <Image
+            src="/Logo/logo.png"
+            alt="FocusFlare Logo"
+            width={240}
+            height={240}
+          />
+        </Link>
       </div>
 
       {/* Navigation Menu */}

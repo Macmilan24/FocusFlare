@@ -7,10 +7,17 @@ import { registerParent, RegisterFormState } from "@/actions/auth.actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 const initialState: RegisterFormState = {
   message: null,
@@ -50,15 +57,25 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-yellow-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent">
-            🔥 Focus Flare
+          <Link href="/" className="inline-block">
+            <Image
+              src="/Logo/logo.png"
+              alt="FocusFlare Logo"
+              width={350}
+              height={350}
+              priority
+            />
           </Link>
-          <p className="text-muted-foreground mt-2">Join the learning adventure! 🌟</p>
+          <p className="text-muted-foreground mt-2">
+            Join the learning adventure! 🌟
+          </p>
         </div>
 
         <Card className="shadow-lg border-2 border-orange-100">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-foreground">Create Your Account!</CardTitle>
+            <CardTitle className="text-2xl font-bold text-foreground">
+              Create Your Account!
+            </CardTitle>
             <CardDescription className="text-base">
               Let's start your amazing learning journey together! 🚀
             </CardDescription>
@@ -78,8 +95,10 @@ export default function RegisterPage() {
             </div>
 
             <form action={formAction} className="space-y-4">
-               <div className="space-y-2">
-                <Label htmlFor="name" className="text-base font-medium">Full Name</Label>
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-base font-medium">
+                  Full Name
+                </Label>
                 <Input
                   id="name"
                   name="name"
@@ -91,7 +110,9 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-base font-medium">Email</Label>
+                <Label htmlFor="email" className="text-base font-medium">
+                  Email
+                </Label>
                 <Input
                   id="email"
                   name="email"
@@ -101,9 +122,11 @@ export default function RegisterPage() {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-base font-medium">Password</Label>
+                <Label htmlFor="password" className="text-base font-medium">
+                  Password
+                </Label>
                 <Input
                   id="password"
                   name="password"
@@ -115,7 +138,12 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="passwordConfirm" className="text-base font-medium">Confirm Password</Label>
+                <Label
+                  htmlFor="passwordConfirm"
+                  className="text-base font-medium"
+                >
+                  Confirm Password
+                </Label>
                 <Input
                   id="passwordConfirm"
                   name="passwordConfirm"
@@ -134,7 +162,10 @@ export default function RegisterPage() {
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
                 Already have an account?{" "}
-                <Link href="/auth/signin" className="text-orange-600 hover:text-orange-700 font-medium">
+                <Link
+                  href="/auth/signin"
+                  className="text-orange-600 hover:text-orange-700 font-medium"
+                >
                   Login here! 🔐
                 </Link>
               </p>
@@ -144,4 +175,4 @@ export default function RegisterPage() {
       </div>
     </div>
   );
-};
+}

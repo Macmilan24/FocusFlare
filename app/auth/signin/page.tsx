@@ -9,6 +9,7 @@ import { authenticate, LoginFormState } from "@/actions/auth.actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -58,11 +59,14 @@ export default function SignInPage() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-yellow-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link
-            href="/"
-            className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-600 bg-clip-text text-transparent"
-          >
-            🔥 Focus Flare
+          <Link href="/" className="inline-block">
+            <Image
+              src="/Logo/logo.png"
+              alt="FocusFlare Logo"
+              width={350}
+              height={350}
+              priority
+            />
           </Link>
           <p className="text-muted-foreground mt-2">
             Welcome back, super learner! 🌟
