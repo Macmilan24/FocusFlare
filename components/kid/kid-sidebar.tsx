@@ -9,6 +9,7 @@ import {
   Award,
   Settings,
   BarChartBig,
+  Map,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -18,6 +19,7 @@ const navigationItems = [
   { title: "Stories", icon: Book, href: "/kid/stories" },
   { title: "Quizzes", icon: Trophy, href: "/kid/quizzes" },
   { title: "Badges", icon: Award, href: "/kid/badges" },
+  { title: "Roadmap", icon: Map, href: "/kid/roadmap" },
   { title: "Leaderboard", icon: BarChartBig, href: "/kid/leaderboard" },
   { title: "Settings", icon: Settings, href: "/kid/profile/edit" },
 ];
@@ -31,7 +33,7 @@ export const KidSidebar = () => {
         <div className="flex flex-col items-center justify-center">
           <div className="w-full h-full rounded-2xl flex items-center justify-center bg-white overflow-hidden mb-2 shadow-lg">
             <Image
-              src="/Logo/logo.png"
+              src="/Logo/logo.jpg"
               alt="FocusFlare Logo"
               width={80}
               height={80}

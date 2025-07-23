@@ -1,0 +1,10 @@
+ignoredBuiltDependencies:
+  - '@heroui/shared-utils'
+  - '@prisma/client'
+  - '@prisma/engines'
+  - '@tailwindcss/oxide'
+  - '@vercel/speed-insights'
+  - focusflare
+  - prisma
+  - sharp
+  - unrs-resolver

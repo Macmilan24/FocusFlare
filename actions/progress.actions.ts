@@ -8,6 +8,7 @@ import {
   EarnedBadge as GamificationEarnedBadge,
 } from "./gamification.actions";
 import { revalidatePath } from "next/cache";
+import { updateRoadmapProgress } from "./roadmap.actions";
 
 // Interface for individual progress items (can be a story or quiz)
 export interface ProgressItemSummary {
@@ -330,6 +331,64 @@ export async function getChildProgressDetailsForReport(
   }
 }
 
+/**
+ * Checks if all lessons in a course are completed after a lesson is finished.
+ * If so, it updates the user's roadmap.
+ * @param userId The ID of the user.
+ * @param lessonId The ID of the lesson that was just completed.
+ */
+async function checkAndCompleteCourse(userId: string, lessonId: string) {
+  try {
+    // 1. Find the course this lesson belongs to
+    const lesson = await prisma.learningContent.findUnique({
+      where: { id: lessonId },
+      select: { courseId: true },
+    });
+
+    if (!lesson || !lesson.courseId) {
+      // Not part of a course, so nothing to do
+      return;
+    }
+
+    const { courseId } = lesson;
+
+    // 2. Get all lessons for this course
+    const courseLessons = await prisma.learningContent.findMany({
+      where: { courseId },
+      select: { id: true },
+    });
+
+    const courseLessonIds = courseLessons.map((l) => l.id);
+
+    // 3. Get the user's progress for all lessons in this course
+    const userProgressForCourse = await prisma.userLearningProgress.findMany({
+      where: {
+        userId,
+        contentId: { in: courseLessonIds },
+        status: "completed",
+      },
+      select: { contentId: true },
+    });
+
+    // 4. Check if all lessons are completed
+    if (userProgressForCourse.length === courseLessonIds.length) {
+      console.log(
+        `All lessons for course ${courseId} completed by user ${userId}. Updating roadmap.`
+      );
+      // All lessons are complete, so update the roadmap
+      await updateRoadmapProgress(userId, courseId);
+      // Optional: Revalidate the roadmap page if it exists
+      revalidatePath("/kid/roadmap");
+    }
+  } catch (error) {
+    console.error(
+      `Failed to check for course completion for user ${userId} and lesson ${lessonId}:`,
+      error
+    );
+    // We don't return an error to the user as this is a background process
+  }
+}
+
 const POINTS_FOR_COMPLETING_LESSON = 25;
 
 export async function updateLessonBlockProgress(
@@ -404,6 +463,9 @@ export async function completeLesson(lessonId: string) {
         },
       }),
     ]);
+
+    // Check for course completion after successfully completing the lesson
+    await checkAndCompleteCourse(userId, lessonId);
 
     // TODO: Add badge-awarding logic here if you have one for lessons
     // e.g., await checkAndAwardLessonBadges(userId);

@@ -70,13 +70,18 @@ model User {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  accounts Account[]
-  sessions Session[]
+  currentGradeLevelId String?     @db.ObjectId
+  currentGradeLevel   GradeLevel? @relation("UserCurrentGrade", fields: [currentGradeLevelId], references: [id], onDelete: SetNull)
+
+  assessments UserAssessment[]
+  accounts    Account[]
+  sessions    Session[]
 
   parentLink       ParentChildLink[]      @relation("Parent")
   childLink        ParentChildLink[]      @relation("Child")
   learningProgress UserLearningProgress[]
   UserBadge        UserBadge[]
+  roadmap          Roadmap?
 }
 
 model ParentChildLink {
@@ -177,7 +182,8 @@ model GradeLevel {
   description String?
   order       Int     @unique // For sorting: 1, 2, 3... Ensures logical display order
 
-  courses Course[]
+  courses          Course[]
+  usersAtThisGrade User[]   @relation("UserCurrentGrade")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -198,7 +204,53 @@ model Course {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  lessons LearningContent[] @relation("CourseLessons")
+  lessons      LearningContent[] @relation("CourseLessons")
+  roadmapItems RoadmapItem[]
 
   @@map("courses")
+}
+
+model UserAssessment {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  assessmentType String   @default("initial_onboarding")
+  takenAt        DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, assessmentType])
+  @@index([userId])
+  @@map("user_assessments")
+}
+
+model Roadmap {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @unique @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items RoadmapItem[] @relation("RoadmapItems")
+
+  @@map("roadmaps")
+}
+
+model RoadmapItem {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  roadmapId String  @db.ObjectId
+  roadmap   Roadmap @relation("RoadmapItems", fields: [roadmapId], references: [id], onDelete: Cascade)
+
+  courseId String @db.ObjectId
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  order  Int // The order of the course in the roadmap
+  status String @default("locked") // e.g., "locked", "unlocked", "in_progress", "completed"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([roadmapId, courseId])
+  @@unique([roadmapId, order])
+  @@index([roadmapId])
 }

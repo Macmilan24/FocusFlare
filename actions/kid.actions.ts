@@ -23,6 +23,50 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { getEarnedBadgesForUser } from "@/actions/gamification.actions";
+import { generateRoadmapForUser } from "./roadmap.actions";
+
+export async function completeOnboarding(
+  userId: string,
+  gradeLevelId: string,
+  favoriteSubject: string
+) {
+  try {
+    // 1. Update the user's profile with the selected grade and subject
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        currentGradeLevelId: gradeLevelId,
+        favoriteSubject: favoriteSubject,
+      },
+    });
+
+    // 2. Create the initial user assessment record (ignore if already exists)
+    try {
+      await prisma.userAssessment.create({
+        data: {
+          userId: userId,
+          assessmentType: "initial_onboarding",
+        },
+      });
+    } catch (error: any) {
+      // If duplicate, ignore; otherwise rethrow
+      if (error.code !== "P2002") {
+        throw error;
+      }
+    }
+
+    // 3. Generate the personalized roadmap for the user
+    await generateRoadmapForUser(userId);
+
+    return { success: true, user: updatedUser };
+  } catch (error) {
+    console.error(`Failed to complete onboarding for user ${userId}:`, error);
+    return {
+      success: false,
+      message: "There was an error completing your setup. Please try again.",
+    };
+  }
+}
 
 export interface ContentCardItem {
   id: string;
