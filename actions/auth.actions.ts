@@ -81,24 +81,16 @@ export async function authenticate(
     await nextAuthSignIn("credentials", {
       loginId,
       password,
+      redirect: false,
     });
 
     return { message: "Login successful! Redirecting...", isError: false };
   } catch (error) {
     if (error instanceof AuthError) {
-      // @ts-expect-error error is not defined in the type of session.user
       switch (error.type) {
         case "CredentialsSignin":
           return {
             message: "Invalid email/username or password.",
-            isError: true,
-          };
-        case "CallbackRouteError":
-          return {
-            message: `Login failed: ${
-              // @ts-expect-error error is not defined in the type of session.user
-              error.cause?.err?.message || "Callback error"
-            }`,
             isError: true,
           };
         default:
@@ -111,7 +103,8 @@ export async function authenticate(
     }
 
     if ((error as any)?.digest?.startsWith("NEXT_REDIRECT")) {
-      throw error;
+      // This should not happen with redirect: false, but as a safeguard
+      return { message: "Redirecting...", isError: false };
     }
 
     console.error("Unexpected error during signin:", error);
@@ -202,8 +195,11 @@ export async function registerParent(
 
 export async function handleSignOut() {
   try {
-    await signOut();
+    await signOut({ redirect: true, redirectTo: "/auth/signin" });
   } catch (error) {
+    if ((error as any)?.digest?.startsWith("NEXT_REDIRECT")) {
+      throw error;
+    }
     console.error("Sign out error:", error);
     // Optionally, re-throw or handle the error in a way that the UI can be notified.
   }
